@@ -1,6 +1,8 @@
 # ETOS (Evolved Technology Operating System)
 ETOS is an operating system based on the Windows NT architecture, produced through clean-room reverse-engineering of official binaries. ETOS is not based on any existing source code, so contributors must use reverse-engineering software to replicate and improve upon the functionality found in official Windows binaries distributed by Microsoft.
 
+> NOTE: This repository only contains partial source code, and cannot produce a working executable. More code will be added gradually as it is reviewed and refined.
+
 ## Supported Devices
 Any x64 device with EFI firmware.
 i386 processors will be supported in the future.

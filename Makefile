@@ -40,9 +40,11 @@ endif
 all:
 	@$(MAKE) -C sdk/crt BUILDDIR=$(BUILDDIR)/crt
 	@$(MAKE) -C sdk/rtl BUILDDIR=$(BUILDDIR)/rtl
+	@$(MAKE) -C boot APP=bootmgr BUILDDIR=$(BUILDDIR)/bootmgr
 
 .PHONY: clean
 clean:
+	@$(MAKE) -C boot clean APP=bootmgr BUILDDIR=$(BUILDDIR)/bootmgr
 	@$(MAKE) -C sdk/rtl clean BUILDDIR=$(BUILDDIR)/rtl
 	@$(MAKE) -C sdk/crt clean BUILDDIR=$(BUILDDIR)/crt
 
