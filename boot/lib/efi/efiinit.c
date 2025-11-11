@@ -373,6 +373,8 @@ Return Value:
 
     STATUS_INVALID_PARAMETER if the buffer is too small.
 
+    Error code if unsuccessful.
+
 --*/
 
 {
@@ -909,7 +911,11 @@ Arguments:
 
 Return Value:
 
-    STATUS_NOT_IMPLEMENTED.
+    STATUS_SUCCESS if successful.
+
+    STATUS_INVALID_PARAMETER if the buffer is too small or an EFI call fails.
+
+    STATUS_NOT_SUPPORTED if the boot services table does not support OpenProtocol.
 
 --*/
 
@@ -919,8 +925,9 @@ Return Value:
     EFI_HANDLE DeviceHandle;
     EFI_PXE_BASE_CODE *PxeBaseCode;
     EFI_PXE_BASE_CODE_MODE *Mode;
-    PCHAR BootFile;
-    ULONG BootFileLength, TotalSize;
+    PSTR BootpBootFile;
+    ULONG BootpBootFileLength, TotalSize;
+    PWSTR Destination;
 
     (VOID) OptionType;
 
@@ -970,35 +977,47 @@ Return Value:
         return STATUS_INVALID_PARAMETER;
     }
 
+    //
+    // Validate the mode.
+    //
     Mode = PxeBaseCode->Mode;
-    if (Mode->UsingIpv6 || (Mode->ProxyOffer.Dhcpv4.BootpBootFile[0] == '\0' && Mode->DhcpAck.Dhcpv4.BootpBootFile[0] == '\0')) {
+    if (Mode->UsingIpv6
+        || ((BootpBootFile = (PSTR)Mode->ProxyOffer.Dhcpv4.BootpBootFile, BootpBootFile[0] == '\0')
+            && (BootpBootFile = (PSTR)Mode->DhcpAck.Dhcpv4.BootpBootFile, BootpBootFile[0] == '\0'))) {
         EfiDebugTrace(L"invalid or unsupported PXE base code mode\r\n");
         Option->IsInvalid = TRUE;
         return STATUS_SUCCESS;
     }
 
-    BootFile = (PCHAR)Mode->DhcpAck.Dhcpv4.BootpBootFile;
-    BootFileLength = (ULONG)strlen(BootFile);
-    TotalSize = sizeof(BOOT_ENTRY_OPTION) + ((BootFileLength * sizeof(WCHAR)) + sizeof(UNICODE_NULL));
-
-    if (BootFile[0] != '\\') {
-        TotalSize += sizeof(L'\\');
-        // *Destination++ = L'\\';
-    }
-
+    //
+    // Check for available buffer space.
+    //
+    BootpBootFileLength = (ULONG)strlen(BootpBootFile);
+    TotalSize = sizeof(BOOT_ENTRY_OPTION) + ((BootpBootFileLength * sizeof(WCHAR)) + sizeof(UNICODE_NULL));
     if (BufferSize < TotalSize) {
         return STATUS_INVALID_PARAMETER;
     }
 
-    // BlCopyStringToWcharString(Destination);
-    Option->DataSize = TotalSize;
+    //
+    // The path must begin with a "\".
+    //
+    Destination = (PWSTR)((PUCHAR)Option + Option->DataOffset);
+    if (BootpBootFile[0] != '\\') {
+        TotalSize += sizeof(L'\\');
+        if (BufferSize < TotalSize) {
+            return STATUS_INVALID_PARAMETER;
+        }
+
+        *Destination++ = L'\\';
+    }
 
     //
-    // TODO: Finish implementing this routine.
+    // Convert to proper string format.
     //
+    BlCopyStringToWcharString(Destination, BootpBootFile);
 
-    EfiDebugTrace(L"not implemented\r\n");
-    return STATUS_NOT_IMPLEMENTED;
+    Option->DataSize = TotalSize - sizeof(BOOT_ENTRY_OPTION);
+    return STATUS_SUCCESS;
 }
 
 PBOOT_APPLICATION_PARAMETERS

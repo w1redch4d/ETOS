@@ -568,6 +568,16 @@ extern PWSTR BlpApplicationBaseDirectory;
 extern PEXECUTION_CONTEXT CurrentExecutionContext;
 
 //
+// String services.
+//
+
+NTSTATUS
+BlCopyStringToWcharString (
+    PWSTR Destination,
+    PSTR  Source
+    );
+
+//
 // Boot option services.
 //
 
