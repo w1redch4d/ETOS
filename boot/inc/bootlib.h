@@ -420,10 +420,12 @@ typedef struct {
 // Boot application entry.
 //
 
-#define BOOT_APPLICATION_ENTRY_ATTRIBUTE_NO_BCD_IDENTIFIER 0x00000001
-#define BOOT_APPLICATION_ENTRY_ATTRIBUTE_OS_LOADER         0x00000004
-#define BOOT_APPLICATION_ENTRY_ATTRIBUTE_NO_TRAP_VECTORS   0x00004000
-#define BOOT_APPLICATION_ENTRY_ATTRIBUTE_UNKNOWN_8000      0x00008000
+#define BOOT_APPLICATION_ENTRY_ATTRIBUTE_NO_BCD_IDENTIFIER    0x00000001
+#define BOOT_APPLICATION_ENTRY_ATTRIBUTE_INTERNAL_BCD_OPTIONS 0x00000002
+#define BOOT_APPLICATION_ENTRY_ATTRIBUTE_OS_LOADER            0x00000004
+#define BOOT_APPLICATION_ENTRY_ATTRIBUTE_EXTERNAL_BCD_OPTIONS 0x00000080
+#define BOOT_APPLICATION_ENTRY_ATTRIBUTE_NO_TRAP_VECTORS      0x00004000
+#define BOOT_APPLICATION_ENTRY_ATTRIBUTE_UNKNOWN_8000         0x00008000
 
 typedef struct {
     ULONG              Attributes;
@@ -458,8 +460,12 @@ typedef struct {
     ULONG TranslationType;
     ULONG MinimumAllocationCount;
     ULONG MinimumHeapSize;
-    ULONG Unknown;
+    ULONG Reserved0;
     PWSTR ApplicationBaseDirectory;
+    ULONG Reserved1;
+    PWSTR FontBaseDirectory;
+    ULONG Reserved2[2];
+    PGUID BcdIdentifier;
 } BOOT_LIBRARY_PARAMETERS, *PBOOT_LIBRARY_PARAMETERS;
 
 //
@@ -565,16 +571,18 @@ extern BOOT_LIBRARY_PARAMETERS BlpLibraryParameters;
 extern BOOT_APPLICATION_ENTRY BlpApplicationEntry;
 extern PWSTR BlpApplicationBaseDirectory;
 
+extern BOOLEAN EnSubsystemInitialized;
+
 extern PEXECUTION_CONTEXT CurrentExecutionContext;
 
 //
 // String services.
 //
 
-NTSTATUS
+VOID
 BlCopyStringToWcharString (
-    PWSTR Destination,
-    PSTR  Source
+    OUT PWSTR Destination,
+    IN  PSTR  Source
     );
 
 //
@@ -607,8 +615,7 @@ BlpFwInitialize (
 
 VOID
 ArchRestoreProcessorFeatures (
-    IN UCHAR Unknown,
-    IN ULONG Unknown1
+    IN BOOLEAN Unknown
     );
 
 VOID
@@ -635,6 +642,32 @@ BlpMmInitialize (
 NTSTATUS
 BlpMmDestroy (
     IN ULONG Phase
+    );
+
+//
+// Event notification services.
+//
+
+#define EVENT_10000002                  0x10000002
+#define EVENT_10000003                  0x10000003
+#define EVENT_10000004                  0x10000004
+#define EVENT_APPLICATION_EXIT          0x10000005
+#define EVENT_LIBRARY_DESTRUCTION_BEGIN 0x10000009
+
+VOID
+BlpEnInitialize (
+    VOID
+    );
+
+VOID
+BlEnNotifyEvent (
+    IN ULONG Event,
+    IN PVOID Context
+    );
+
+NTSTATUS
+BlpEnDestroy (
+    VOID
     );
 
 //

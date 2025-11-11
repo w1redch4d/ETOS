@@ -6,7 +6,7 @@ Provided under the BSD 3-Clause license.
 
 Module Name:
 
-    bootopt.c
+    option.c
 
 Abstract:
 
