@@ -22,6 +22,7 @@ Abstract:
 #include "bootlib.h"
 
 extern PFIRMWARE_DATA EfiFirmwareParameters;
+extern EFI_HANDLE EfiImageHandle;
 extern EFI_SYSTEM_TABLE *EfiST;
 extern EFI_BOOT_SERVICES *EfiBS;
 extern EFI_RUNTIME_SERVICES *EfiRT;
