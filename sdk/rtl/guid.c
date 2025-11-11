@@ -161,13 +161,11 @@ Return Value:
     //
     // Convert string to GUID data.
     //
-    if (
-        ScanHexFormat(
+    if (ScanHexFormat(
             String->Buffer, String->Length / sizeof(WCHAR),
             L"{%08lx-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
             &Guid->Data1, &Guid->Data2, &Guid->Data3, &Data4[0], &Data4[1], &Data4[2], &Data4[3], &Data4[4], &Data4[5], &Data4[6], &Data4[7]
-            ) == -1
-        ) {
+        ) == -1) {
         return STATUS_INVALID_PARAMETER;
     }
 
