@@ -20,6 +20,7 @@ Abstract:
 UCHAR EfiInitScratch[2048];
 const EFI_GUID EfiLoadedImageProtocol = EFI_LOADED_IMAGE_PROTOCOL_GUID;
 const EFI_GUID EfiDevicePathProtocol = EFI_DEVICE_PATH_PROTOCOL_GUID;
+const EFI_GUID EfiPxeBaseCodeProtocol = EFI_PXE_BASE_CODE_PROTOCOL_GUID;
 const EFI_GUID EfiVmbusChannelDevicePath = VMBUS_CHANNEL_DEVICE_GUID;
 
 NTSTATUS
@@ -905,17 +906,86 @@ Return Value:
 --*/
 
 {
-    (VOID) SystemTable;
-    (VOID) EfiDevicePath;
+    EFI_STATUS Status;
+    EFI_DEVICE_PATH *DevicePath;
+    EFI_HANDLE DeviceHandle;
+    EFI_PXE_BASE_CODE *PxeBaseCode;
+    EFI_PXE_BASE_CODE_MODE *Mode;
+    PCHAR BootFile;
+    ULONG BootFileLength, TotalSize;
+
     (VOID) OptionType;
-    (VOID) Option;
-    (VOID) BufferSize;
+
+    if (BufferSize < sizeof(BOOT_ENTRY_OPTION)) {
+        return STATUS_INVALID_PARAMETER;
+    }
+
+    RtlZeroMemory(Option, sizeof(*Option));
+    Option->Type = BCDE_LIBRARY_TYPE_APPLICATION_PATH;
+    Option->DataOffset = sizeof(BOOT_ENTRY_OPTION);
 
     //
-    // TODO: Implement this routine.
+    // Get the device handle for the base code protocol.
+    //
+    DevicePath = EfiDevicePath;
+    Status = SystemTable->BootServices->LocateDevicePath(
+        (EFI_GUID *)&EfiPxeBaseCodeProtocol,
+        &DevicePath,
+        &DeviceHandle
+    );
+    if (Status != EFI_SUCCESS) {
+        EfiDebugPrintf(L"Failed to locate PXE base code device path (Status=%x)\r\n", Status);
+        return STATUS_INVALID_PARAMETER;
+    }
+
+    //
+    // TODO: Check for EFI 1.1+ before using OpenProtocol().
+    //
+    EfiDebugPrint(L"Warning: not checking for OpenProtocol support\r\n");
+
+    //
+    // Open the protocol using the handle.
+    //
+    Status = SystemTable->BootServices->OpenProtocol(
+        DeviceHandle,
+        (EFI_GUID *)&EfiPxeBaseCodeProtocol,
+        (VOID **)&PxeBaseCode,
+        EfiImageHandle,
+        NULL,
+        EFI_OPEN_PROTOCOL_GET_PROTOCOL
+    );
+    if (Status != EFI_SUCCESS) {
+        EfiDebugPrintf(L"Failed to open PXE base code protocol (Status=%x)\r\n", Status);
+        return STATUS_INVALID_PARAMETER;
+    }
+
+    Mode = PxeBaseCode->Mode;
+    if (Mode->UsingIpv6 || (Mode->ProxyOffer.Dhcpv4.BootpBootFile[0] == '\0' && Mode->DhcpAck.Dhcpv4.BootpBootFile[0] == '\0')) {
+        EfiDebugPrint(L"Invalid or unsupported PXE base code mode\r\n");
+        Option->IsInvalid = TRUE;
+        return STATUS_SUCCESS;
+    }
+
+    BootFile = (PCHAR)Mode->DhcpAck.Dhcpv4.BootpBootFile;
+    BootFileLength = (ULONG)strlen(BootFile);
+    TotalSize = sizeof(BOOT_ENTRY_OPTION) + ((BootFileLength * sizeof(WCHAR)) + sizeof(UNICODE_NULL));
+
+    if (BootFile[0] != '\\') {
+        TotalSize += sizeof(L'\\');
+        // *Destination++ = L'\\';
+    }
+
+    if (BufferSize < TotalSize) {
+        return STATUS_INVALID_PARAMETER;
+    }
+
+    // BlCopyStringToWcharString(Destination);
+    Option->DataSize = TotalSize;
+
+    //
+    // TODO: Finish implementing this routine.
     //
 
-    EfiDebugPrint(L"Warning: EfiInitConvertEfiPxeFilePath not implemented\r\n");
     return STATUS_NOT_IMPLEMENTED;
 }
 
