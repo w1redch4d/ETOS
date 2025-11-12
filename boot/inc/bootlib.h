@@ -541,7 +541,7 @@ typedef enum {
 } EXECUTION_CONTEXT_TYPE;
 
 #if defined(__x86_64__) || defined(__i386__)
-#define EXECUTION_CONTEXT_UNKNOWN_1              0x00000001
+#define EXECUTION_CONTEXT_INTERRUPTS_DISABLED    0x00000001
 #define EXECUTION_CONTEXT_INTERRUPTS_ENABLED     0x00000002
 #define EXECUTION_CONTEXT_5_LEVEL_PAGING_ENABLED 0x00000004
 #endif
@@ -653,9 +653,9 @@ BlpFwInitialize (
 // Architecture services.
 //
 
-VOID
-ArchRestoreProcessorFeatures (
-    IN BOOLEAN Unknown
+NTSTATUS
+BlpArchInitialize (
+    IN ULONG Phase
     );
 
 VOID
@@ -663,9 +663,9 @@ BlpArchSwitchContext (
     IN EXECUTION_CONTEXT_TYPE Type
     );
 
-NTSTATUS
-BlpArchInitialize (
-    IN ULONG Phase
+VOID
+ArchRestoreProcessorFeatures (
+    IN BOOLEAN Unknown
     );
 
 //
