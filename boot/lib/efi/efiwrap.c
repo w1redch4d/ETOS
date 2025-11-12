@@ -240,3 +240,239 @@ Return Value:
 
     return EfiGetNtStatusCode(EfiStatus);
 }
+
+NTSTATUS
+EfiSetWatchdogTimer (
+    IN UINTN  Timeout,
+    IN UINT64 WatchdogCode,
+    IN UINTN  DataSize,
+    IN CHAR16 *WatchdogData OPTIONAL
+    )
+
+/*++
+
+Routine Description:
+
+    Wrapper around SetWatchdogTimer.
+
+Arguments:
+
+    Timeout - The number of seconds to set the timer to (or 0 to disable the timer).
+
+    WatchdogCode - The code to log if the timer times out (0x0000-0xffff are reserved).
+
+    DataSize - The size, in bytes, of WatchdogData.
+
+    WatchdogData - Pointer to a string describing the timeout reason, or NULL.
+
+Return Value:
+
+    STATUS_SUCCESS if successful.
+
+    STATUS_INVALID_PARAMETER if WatchdogCode is invalid.
+
+    STATUS_NOT_SUPPORTED if the system does not have a watchdog timer.
+
+    STATUS_IO_DEVICE_ERROR if a hardware error occurs.
+
+--*/
+
+{
+    EXECUTION_CONTEXT_TYPE ContextType;
+    EFI_STATUS EfiStatus;
+
+    ContextType = CurrentExecutionContext->Type;
+    if (ContextType != ExecutionContextFirmware) {
+        BlpArchSwitchContext(ExecutionContextFirmware);
+    }
+
+    EfiStatus = EfiBS->SetWatchdogTimer(
+        Timeout,
+        WatchdogCode,
+        DataSize,
+        WatchdogData
+    );
+
+    if (ContextType != ExecutionContextFirmware) {
+        BlpArchSwitchContext(ContextType);
+    }
+
+    return EfiGetNtStatusCode(EfiStatus);
+}
+
+NTSTATUS
+EfiVmOpenProtocol (
+    IN  EFI_HANDLE Handle,
+    IN  EFI_GUID   *Protocol,
+    OUT VOID       **Interface OPTIONAL
+    )
+
+/*++
+
+Routine Description:
+
+    Wrapper around OpenProtocol/HandleProtocol, with address translation support.
+
+Arguments:
+
+    Handle - The handle being queried.
+
+    Protocol - The unique identifier of the protocol.
+
+    Interface - Pointer to a VOID* that receives the address of the interface or NULL.
+
+Return Value:
+
+    STATUS_NOT_IMPLEMENTED.
+
+--*/
+
+{
+    (VOID) Handle;
+    (VOID) Protocol;
+    (VOID) Interface;
+
+    //
+    // TODO: Implement this routine.
+    //
+
+    return STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS
+EfiOpenProtocol (
+    IN  EFI_HANDLE Handle,
+    IN  EFI_GUID   *Protocol,
+    OUT VOID       **Interface OPTIONAL
+    )
+
+/*++
+
+Routine Description:
+
+    Wrapper around OpenProtocol/HandleProtocol.
+
+Arguments:
+
+    Handle - The handle being queried.
+
+    Protocol - The unique identifier of the protocol.
+
+    Interface - Pointer to a VOID* that receives the address of the interface or NULL.
+
+Return Value:
+
+    STATUS_SUCCESS if successful.
+
+    STATUS_NOT_SUPPORTED if the device does not support the requested protocol.
+
+    STATUS_INVALID_PARAMETER if any argument(s) is/are NULL.
+
+--*/
+
+{
+    NTSTATUS Status;
+    EXECUTION_CONTEXT_TYPE ContextType;
+    EFI_STATUS EfiStatus;
+
+    if (MmTranslationType != TRANSLATION_TYPE_NONE) {
+        Status = EfiVmOpenProtocol(Handle, Protocol, Interface);
+    } else {
+        ContextType = CurrentExecutionContext->Type;
+        if (ContextType != ExecutionContextFirmware) {
+            BlpArchSwitchContext(ExecutionContextFirmware);
+        }
+
+        if (EfiST->Hdr.Revision == EFI_1_02_SYSTEM_TABLE_REVISION) {
+            EfiStatus = EfiBS->HandleProtocol(
+                Handle,
+                Protocol,
+                Interface
+            );
+        } else {
+            EfiStatus = EfiBS->OpenProtocol(
+                Handle,
+                Protocol,
+                Interface,
+                EfiImageHandle,
+                NULL,
+                EFI_OPEN_PROTOCOL_GET_PROTOCOL
+            );
+        }
+
+        if (ContextType != ExecutionContextFirmware) {
+            BlpArchSwitchContext(ContextType);
+        }
+
+        Status = EfiGetNtStatusCode(EfiStatus);
+    }
+
+    if (!NT_SUCCESS(Status)) {
+        *Interface = NULL;
+    }
+
+    return Status;
+}
+
+NTSTATUS
+EfiConInExSetState (
+    IN EFI_KEY_TOGGLE_STATE PreviousState,
+    IN EFI_KEY_TOGGLE_STATE *KeyToggleState
+    )
+
+/*++
+
+Routine Description:
+
+    Wrapper around SetState.
+
+Arguments:
+
+    PreviousState - The previous key toggle state (ignored).
+
+    KeyToggleState - Pointer to the desired key toggle state.
+
+Return Value:
+
+    STATUS_SUCCESS if successful.
+
+    STATUS_IO_DEVICE_ERROR if the device is not functioning properly.
+
+    STATUS_NOT_SUPPORTED if the device does not support the requested state change.
+
+--*/
+
+{
+    EXECUTION_CONTEXT_TYPE ContextType;
+    EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL *ConInEx;
+    EFI_STATUS EfiStatus;
+
+    (VOID) PreviousState;
+
+    ContextType = CurrentExecutionContext->Type;
+    if (ContextType != ExecutionContextFirmware) {
+        //
+        // Translate addresses for firmware.
+        //
+        ConInEx = TranslatePointer(EfiConInEx);
+        KeyToggleState = TranslatePointer(KeyToggleState);
+
+        //
+        // Switch to firmware context.
+        //
+        BlpArchSwitchContext(ExecutionContextFirmware);
+    } else {
+        ConInEx = EfiConInEx;
+    }
+
+    EfiStatus = ConInEx->SetState(
+        ConInEx,
+        KeyToggleState
+    );
+
+    if (ContextType != ExecutionContextFirmware) {
+        BlpArchSwitchContext(ContextType);
+    }
+
+    return EfiGetNtStatusCode(EfiStatus);
+}

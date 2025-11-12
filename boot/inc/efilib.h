@@ -101,6 +101,34 @@ EfiFreePages (
     IN UINTN                Pages
     );
 
+NTSTATUS
+EfiSetWatchdogTimer (
+    IN UINTN  Timeout,
+    IN UINT64 WatchdogCode,
+    IN UINTN  DataSize,
+    IN CHAR16 *WatchdogData OPTIONAL
+    );
+
+NTSTATUS
+EfiVmOpenProtocol (
+    IN  EFI_HANDLE Handle,
+    IN  EFI_GUID   *Protocol,
+    OUT VOID       **Interface OPTIONAL
+    );
+
+NTSTATUS
+EfiOpenProtocol (
+    IN  EFI_HANDLE Handle,
+    IN  EFI_GUID   *Protocol,
+    OUT VOID       **Interface OPTIONAL
+    );
+
+NTSTATUS
+EfiConInExSetState (
+    IN EFI_KEY_TOGGLE_STATE PreviousState,
+    IN EFI_KEY_TOGGLE_STATE *KeyToggleState
+    );
+
 //
 // File path services.
 //
