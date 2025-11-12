@@ -47,7 +47,7 @@ Arguments:
 
     BufferSize - The size of the option buffer.
 
-    OptionSize - Pointer to a ULONG that recieves the size of the added option.
+    OptionSize - Pointer to a ULONG that receives the size of the added option.
 
     PreviousOption - Pointer to the previous option.
 
@@ -92,9 +92,9 @@ Arguments:
 
     DevicePath - Pointer to the VMBus device path.
 
-    InterfaceType - Pointer to a GUID that recieves the interface type identifier.
+    InterfaceType - Pointer to a GUID that receives the interface type identifier.
 
-    InterfaceInterface - Pointer to a GUID that recieves the interface instance identifier.
+    InterfaceInterface - Pointer to a GUID that receives the interface instance identifier.
 
 Return Value:
 
@@ -504,10 +504,10 @@ Return Value:
 {
     NTSTATUS Status;
     PWINDOWS_OS_OPTIONS WindowsOptions;
-    BOOLEAN UsingWindowsOptions, BcdIdentifierSet;
+    BOOLEAN UsingWindowsOptions, IdentifierSet;
     PWSTR OptionsString;
     ULONG OptionsStringLength, OptionsSize, Size, BufferRemaining;
-    PWSTR BcdIdentifierOption;
+    PWSTR IdentifierOption;
     PBOOT_ENTRY_OPTION Option, PreviousOption;
     UNICODE_STRING UnicodeString;
     PBCDE_DEVICE BootDeviceElement;
@@ -561,23 +561,23 @@ Return Value:
     //
     RtlZeroMemory(Entry, sizeof(*Entry));
     Entry->Signature = BOOT_APPLICATION_TRANSITION_ENTRY_SIGNATURE;
-    Entry->Attributes |= BOOT_APPLICATION_ENTRY_ATTRIBUTE_UNKNOWN_8000;
+    Entry->Attributes |= BOOT_ENTRY_UNKNOWN_8000;
 
     //
     // Parse BCD identifier option.
     //
-    BcdIdentifierSet = FALSE;
-    if (LoadOptions != NULL && (BcdIdentifierOption = wcsstr(OptionsString, L"BCDOBJECT=")) != NULL) {
+    IdentifierSet = FALSE;
+    if (LoadOptions != NULL && (IdentifierOption = wcsstr(OptionsString, L"BCDOBJECT=")) != NULL) {
         EfiDebugTrace(L"found BCDOBJECT option\r\n");
-        RtlInitUnicodeString(&UnicodeString, (PWSTR)((PUCHAR)BcdIdentifierOption + sizeof(L"BCDOBJECT=") - sizeof(UNICODE_NULL)));
-        Status = RtlGUIDFromString(&UnicodeString, &Entry->BcdIdentifier);
+        RtlInitUnicodeString(&UnicodeString, (PWSTR)((PUCHAR)IdentifierOption + sizeof(L"BCDOBJECT=") - sizeof(UNICODE_NULL)));
+        Status = RtlGUIDFromString(&UnicodeString, &Entry->Identifier);
         if (NT_SUCCESS(Status)) {
-            BcdIdentifierSet = TRUE;
+            IdentifierSet = TRUE;
         }
     }
 
-    if (!BcdIdentifierSet) {
-        Entry->Attributes |= BOOT_APPLICATION_ENTRY_ATTRIBUTE_NO_BCD_IDENTIFIER;
+    if (!IdentifierSet) {
+        Entry->Attributes |= BOOT_ENTRY_NO_IDENTIFIER;
     }
 
     OptionsSize = 0;
@@ -637,7 +637,7 @@ Return Value:
     //
     // Parse OS path if no BCD identifier was set.
     //
-    if (UsingWindowsOptions && !BcdIdentifierSet) {
+    if (UsingWindowsOptions && !IdentifierSet) {
         OsPath = (PWINDOWS_OS_PATH)((PUCHAR)WindowsOptions + WindowsOptions->OsPathOffset);
         if (OsPath->Length > FIELD_OFFSET(WINDOWS_OS_PATH, Data) && OsPath->Type == WINDOWS_OS_PATH_TYPE_EFI) {
             OsDevicePath = (EFI_DEVICE_PATH *)OsPath->Data;
@@ -649,7 +649,7 @@ Return Value:
             Option = (PBOOT_ENTRY_OPTION)((PUCHAR)&Entry->InlineOptions + OptionsSize);
             Status = EfiInitpConvertEfiDevicePath(
                 OsDevicePath,
-                BCDE_APPLICATION_TYPE_APPLICATION_DEVICE,
+                BCDE_OS_LOADER_TYPE_APPLICATION_DEVICE,
                 Option,
                 BufferRemaining
             );
@@ -669,7 +669,7 @@ Return Value:
             Option = (PBOOT_ENTRY_OPTION)((PUCHAR)&Entry->InlineOptions + OptionsSize);
             Status = EfiInitpConvertEfiFilePath(
                 OsDevicePath,
-                BCDE_APPLICATION_TYPE_APPLICATION_PATH,
+                BCDE_OS_LOADER_TYPE_APPLICATION_PATH,
                 Option,
                 BufferRemaining
             );

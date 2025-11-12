@@ -322,6 +322,45 @@ typedef struct {
 } DEVICE_IDENTIFIER, *PDEVICE_IDENTIFIER;
 
 //
+// BCD element.
+//
+
+typedef ULONG BCDE_DATA_TYPE;
+typedef BCDE_DATA_TYPE *PBCDE_DATA_TYPE;
+
+#define BCDE_CLASS_MASK          0xf0000000
+#define BCDE_CLASS_LIBRARY       0x10000000
+#define BCDE_CLASS_APPLICATION   0x20000000
+#define BCDE_CLASS_DEVICE        0x30000000
+#define BCDE_CLASS_TEMPLATE      0x40000000
+
+#define BCDE_FORMAT_MASK         0x0f000000
+#define BCDE_FORMAT_DEVICE       0x01000000
+#define BCDE_FORMAT_STRING       0x02000000
+#define BCDE_FORMAT_GUID         0x03000000
+#define BCDE_FORMAT_GUID_LIST    0x04000000
+#define BCDE_FORMAT_INTEGER      0x05000000
+#define BCDE_FORMAT_BOOLEAN      0x06000000
+#define BCDE_FORMAT_INTEGER_LIST 0x07000000
+
+#define BCDE_LIBRARY_TYPE_APPLICATION_DEVICE         0x11000001
+#define BCDE_LIBRARY_TYPE_UNKNOWN_11000083           0x11000083
+#define BCDE_LIBRARY_TYPE_APPLICATION_PATH           0x12000002
+#define BCDE_LIBRARY_TYPE_DESCRIPTION                0x12000004
+#define BCDE_LIBRARY_TYPE_RECOVERY_SEQUENCE          0x14000008
+#define BCDE_LIBRARY_TYPE_AUTO_RECOVERY_ENABLED      0x16000009
+#define BCDE_LIBRARY_TYPE_DISPLAY_ADVANCED_OPTIONS   0x16000040
+#define BCDE_LIBRARY_TYPE_ENABLE_NUM_LOCK            0x16000087
+
+#define BCDE_OS_LOADER_TYPE_APPLICATION_DEVICE 0x21000001
+#define BCDE_OS_LOADER_TYPE_APPLICATION_PATH   0x22000002
+
+typedef struct {
+    GUID              Options;
+    DEVICE_IDENTIFIER Identifier;
+} BCDE_DEVICE, *PBCDE_DEVICE;
+
+//
 // Memory information.
 //
 
@@ -420,16 +459,16 @@ typedef struct {
 // Boot application entry.
 //
 
-#define BOOT_APPLICATION_ENTRY_ATTRIBUTE_NO_BCD_IDENTIFIER    0x00000001
-#define BOOT_APPLICATION_ENTRY_ATTRIBUTE_INTERNAL_BCD_OPTIONS 0x00000002
-#define BOOT_APPLICATION_ENTRY_ATTRIBUTE_OS_LOADER            0x00000004
-#define BOOT_APPLICATION_ENTRY_ATTRIBUTE_EXTERNAL_BCD_OPTIONS 0x00000080
-#define BOOT_APPLICATION_ENTRY_ATTRIBUTE_NO_TRAP_VECTORS      0x00004000
-#define BOOT_APPLICATION_ENTRY_ATTRIBUTE_UNKNOWN_8000         0x00008000
+#define BOOT_ENTRY_NO_IDENTIFIER    0x00000001
+#define BOOT_ENTRY_OPTIONS_EXTERNAL 0x00000002
+#define BOOT_ENTRY_OS_LOADER        0x00000004
+#define BOOT_ENTRY_OPTIONS_INTERNAL 0x00000080
+#define BOOT_ENTRY_NO_TRAP_VECTORS  0x00004000
+#define BOOT_ENTRY_UNKNOWN_8000     0x00008000
 
 typedef struct {
     ULONG              Attributes;
-    GUID               BcdIdentifier;
+    GUID               Identifier;
     PBOOT_ENTRY_OPTION Options;
 } BOOT_APPLICATION_ENTRY, *PBOOT_APPLICATION_ENTRY;
 
@@ -442,7 +481,7 @@ typedef struct {
 typedef struct {
     ULONGLONG         Signature;
     ULONG             Attributes;
-    GUID              BcdIdentifier;
+    GUID              Identifier;
     UCHAR             Reserved[16];
     BOOT_ENTRY_OPTION InlineOptions;
 } BOOT_APPLICATION_TRANSITION_ENTRY, *PBOOT_APPLICATION_TRANSITION_ENTRY;
@@ -465,44 +504,31 @@ typedef struct {
     ULONG Reserved1;
     PWSTR FontBaseDirectory;
     ULONG Reserved2[2];
-    PGUID BcdIdentifier;
+    PGUID Identifier;
 } BOOT_LIBRARY_PARAMETERS, *PBOOT_LIBRARY_PARAMETERS;
 
 //
-// BCD element.
+// Boot option callbacks.
 //
 
-typedef ULONG BCDE_DATA_TYPE;
-typedef BCDE_DATA_TYPE *PBCDE_DATA_TYPE;
-
-#define BCDE_CLASS_MASK          0xf0000000
-#define BCDE_CLASS_LIBRARY       0x10000000
-#define BCDE_CLASS_APPLICATION   0x20000000
-#define BCDE_CLASS_DEVICE        0x30000000
-#define BCDE_CLASS_TEMPLATE      0x40000000
-
-#define BCDE_FORMAT_MASK         0x0f000000
-#define BCDE_FORMAT_DEVICE       0x01000000
-#define BCDE_FORMAT_STRING       0x02000000
-#define BCDE_FORMAT_GUID         0x03000000
-#define BCDE_FORMAT_GUID_LIST    0x04000000
-#define BCDE_FORMAT_BOOLEAN      0x05000000
-#define BCDE_FORMAT_INTEGER      0x06000000
-#define BCDE_FORMAT_INTEGER_LIST 0x07000000
-
-#define BCDE_LIBRARY_TYPE_APPLICATION_DEVICE         0x11000001
-#define BCDE_LIBRARY_TYPE_UNKNOWN_11000083           0x11000083
-#define BCDE_LIBRARY_TYPE_APPLICATION_PATH           0x12000002
-#define BCDE_LIBRARY_TYPE_RECOVERY_SEQUENCE          0x14000008
-#define BCDE_LIBRARY_TYPE_DISPLAY_ADVANCED_OPTIONS   0x16000040
-
-#define BCDE_APPLICATION_TYPE_APPLICATION_DEVICE 0x21000001
-#define BCDE_APPLICATION_TYPE_APPLICATION_PATH   0x22000002
+typedef
+NTSTATUS
+(*PBOOT_OPTION_CALLBACK_BOOLEAN) (
+    IN  ULONGLONG      Cookie,
+    IN  NTSTATUS       Status,
+    IN  ULONG          Unknown,
+    IN  PGUID          Identifier,
+    IN  BCDE_DATA_TYPE Type,
+    IN  PVOID          SecurityDescriptor,
+    OUT PBOOLEAN       Value
+    );
 
 typedef struct {
-    GUID              Options;
-    DEVICE_IDENTIFIER Identifier;
-} BCDE_DEVICE, *PBCDE_DEVICE;
+    PBOOT_OPTION_CALLBACK_BOOLEAN Boolean;
+    PVOID                         Integer;
+    PVOID                         String;
+    PVOID                         Device;
+} BOOT_OPTION_CALLBACKS, *PBOOT_OPTION_CALLBACKS;
 
 //
 // Execution context.
@@ -515,9 +541,9 @@ typedef enum {
 } EXECUTION_CONTEXT_TYPE;
 
 #if defined(__x86_64__) || defined(__i386__)
-#define EXECUTION_CONTEXT_ATTRIBUTE_UNKNOWN_1              0x00000001
-#define EXECUTION_CONTEXT_ATTRIBUTE_INTERRUPTS_ENABLED     0x00000002
-#define EXECUTION_CONTEXT_ATTRIBUTE_5_LEVEL_PAGING_ENABLED 0x00000004
+#define EXECUTION_CONTEXT_UNKNOWN_1              0x00000001
+#define EXECUTION_CONTEXT_INTERRUPTS_ENABLED     0x00000002
+#define EXECUTION_CONTEXT_5_LEVEL_PAGING_ENABLED 0x00000004
 #endif
 
 typedef struct {
@@ -570,6 +596,7 @@ extern PBOOT_APPLICATION_PARAMETERS BlpApplicationParameters;
 extern BOOT_LIBRARY_PARAMETERS BlpLibraryParameters;
 extern BOOT_APPLICATION_ENTRY BlpApplicationEntry;
 extern PWSTR BlpApplicationBaseDirectory;
+extern BOOLEAN BlpApplicationIdentifierSet;
 
 extern BOOLEAN EnSubsystemInitialized;
 
@@ -589,6 +616,12 @@ BlCopyStringToWcharString (
 // Boot option services.
 //
 
+PBOOT_ENTRY_OPTION
+BcdUtilGetBootOption (
+    IN PBOOT_ENTRY_OPTION Options,
+    IN BCDE_DATA_TYPE     Type
+    );
+
 ULONG
 BlGetBootOptionSize (
     IN PBOOT_ENTRY_OPTION Option
@@ -597,6 +630,13 @@ BlGetBootOptionSize (
 ULONG
 BlGetBootOptionListSize (
     IN PBOOT_ENTRY_OPTION Options
+    );
+
+NTSTATUS
+BlGetBootOptionBoolean (
+    IN  PBOOT_ENTRY_OPTION Options,
+    IN  BCDE_DATA_TYPE     Type,
+    OUT PBOOLEAN           Value
     );
 
 //
@@ -649,14 +689,31 @@ BlpMmDestroy (
 //
 
 #define EVENT_10000002                  0x10000002
-#define EVENT_10000003                  0x10000003
+#define EVENT_APPLICATION_LOAD          0x10000003
 #define EVENT_10000004                  0x10000004
 #define EVENT_APPLICATION_EXIT          0x10000005
 #define EVENT_LIBRARY_DESTRUCTION_BEGIN 0x10000009
 
+typedef
+VOID
+(*PEVENT_HANDLER) (
+    IN ULONG Event,
+    IN PVOID Context,
+    IN ULONG Unknown0,
+    IN ULONG Unknown1
+    );
+
 VOID
 BlpEnInitialize (
     VOID
+    );
+
+NTSTATUS
+BlEnRegisterEventHandler (
+    IN ULONG          Event,
+    IN PEVENT_HANDLER Handler,
+    IN ULONG          Unknown0,
+    IN ULONG          Unknown1
     );
 
 VOID
@@ -678,6 +735,11 @@ NTSTATUS
 BlInitializeLibrary (
     IN PBOOT_APPLICATION_PARAMETERS ApplicationParameters,
     IN PBOOT_LIBRARY_PARAMETERS     LibraryParameters
+    );
+
+PGUID
+BlGetApplicationIdentifier (
+    VOID
     );
 
 NTSTATUS

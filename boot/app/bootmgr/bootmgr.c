@@ -67,7 +67,7 @@ Return Value:
     LibraryParameters.ApplicationBaseDirectory = L"\\Boot";
 #endif
     LibraryParameters.FontBaseDirectory = NULL;
-    LibraryParameters.BcdIdentifier = &GUID_WINDOWS_BOOTMGR;
+    LibraryParameters.Identifier = &GUID_WINDOWS_BOOTMGR;
     Status = BlInitializeLibrary(ApplicationParameters, &LibraryParameters);
     if (!NT_SUCCESS(Status)) {
         if (Status != STATUS_INVALID_PARAMETER_9) {
