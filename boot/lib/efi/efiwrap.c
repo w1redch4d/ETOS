@@ -476,3 +476,99 @@ Return Value:
 
     return EfiGetNtStatusCode(EfiStatus);
 }
+
+NTSTATUS
+EfiAllocatePool (
+    IN  EFI_MEMORY_TYPE PoolType,
+    IN  UINTN           Size,
+    OUT VOID            **Buffer
+    )
+
+/*++
+
+Routine Description:
+
+    Wrapper around AllocatePool.
+
+Arguments:
+
+    PoolType - The memory type to allocate.
+
+    Size - The number of bytes to allocate.
+
+    Buffer - Pointer to a VOID* that receives the address of the allocated buffer or NULL.
+
+Return Value:
+
+    STATUS_SUCCESS if successful.
+
+    STATUS_INSUFFICIENT_NVRAM_RESOURCES if the pool could not be allocated.
+
+    STATUS_INVALID_PARAMETER if PoolType is invalid or Buffer is NULL.
+
+--*/
+
+{
+    EXECUTION_CONTEXT_TYPE ContextType;
+    EFI_STATUS EfiStatus;
+
+    ContextType = CurrentExecutionContext->Type;
+    if (ContextType != ExecutionContextFirmware) {
+        BlpArchSwitchContext(ExecutionContextFirmware);
+    }
+
+    EfiStatus = EfiBS->AllocatePool(
+        PoolType,
+        Size,
+        Buffer
+    );
+
+    if (ContextType != ExecutionContextFirmware) {
+        BlpArchSwitchContext(ContextType);
+    }
+
+    return EfiGetNtStatusCode(EfiStatus);
+}
+
+NTSTATUS
+EfiFreePool (
+    IN VOID *Buffer
+    )
+
+/*++
+
+Routine Description:
+
+    Wrapper around FreePool.
+
+Arguments:
+
+    Buffer - Pointer to the buffer to free.
+
+Return Value:
+
+    STATUS_SUCCESS if successful.
+
+    STATUS_INVALID_PARAMETER if Buffer is invalid.
+
+--*/
+
+{
+    EXECUTION_CONTEXT_TYPE ContextType;
+    EFI_STATUS EfiStatus;
+
+    ContextType = CurrentExecutionContext->Type;
+    if (ContextType != ExecutionContextFirmware) {
+        BlpArchSwitchContext(ExecutionContextFirmware);
+    }
+
+    EfiStatus = EfiBS->FreePool(
+        Buffer
+    );
+
+    if (ContextType != ExecutionContextFirmware) {
+        BlpArchSwitchContext(ContextType);
+    }
+
+    return EfiGetNtStatusCode(EfiStatus);
+}

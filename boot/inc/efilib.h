@@ -129,6 +129,18 @@ EfiConInExSetState (
     IN EFI_KEY_TOGGLE_STATE *KeyToggleState
     );
 
+NTSTATUS
+EfiAllocatePool (
+    IN  EFI_MEMORY_TYPE PoolType,
+    IN  UINTN           Size,
+    OUT VOID            **Buffer
+    );
+
+NTSTATUS
+EfiFreePool (
+    IN VOID *Buffer
+    );
+
 //
 // File path services.
 //
