@@ -649,7 +649,7 @@ Return Value:
             Option = (PBOOT_ENTRY_OPTION)((PUCHAR)&Entry->InlineOptions + OptionsSize);
             Status = EfiInitpConvertEfiDevicePath(
                 OsDevicePath,
-                BCDE_OS_LOADER_TYPE_APPLICATION_DEVICE,
+                BCDE_OS_LOADER_TYPE_OS_DEVICE,
                 Option,
                 BufferRemaining
             );
@@ -669,7 +669,7 @@ Return Value:
             Option = (PBOOT_ENTRY_OPTION)((PUCHAR)&Entry->InlineOptions + OptionsSize);
             Status = EfiInitpConvertEfiFilePath(
                 OsDevicePath,
-                BCDE_OS_LOADER_TYPE_APPLICATION_PATH,
+                BCDE_OS_LOADER_TYPE_SYSTEM_ROOT,
                 Option,
                 BufferRemaining
             );
