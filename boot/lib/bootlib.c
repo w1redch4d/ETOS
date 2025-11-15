@@ -27,6 +27,7 @@ ULONG BlpApplicationFlags = 0;
 PBOOT_APPLICATION_PARAMETERS BlpApplicationParameters;
 BOOT_LIBRARY_PARAMETERS BlpLibraryParameters;
 BOOT_APPLICATION_ENTRY BlpApplicationEntry;
+PDEVICE_IDENTIFIER BlpBootDevice;
 PWSTR BlpApplicationBaseDirectory;
 BOOLEAN BlpApplicationIdentifierSet = FALSE;
 ULONG BlPlatformFlags = 0x2a0000 | PLATFORM_FLAG_FIRMWARE_EXECUTION_CONTEXT;
@@ -92,6 +93,7 @@ Return Value:
     //
     BlpApplicationParameters = ApplicationParameters;
     BlpApplicationBaseDirectory = LibraryParameters->ApplicationBaseDirectory;
+    BlpBootDevice = (PDEVICE_IDENTIFIER)((ULONG_PTR)ApplicationParameters + ApplicationParameters->BootDeviceOffset);
 
     //
     // ???

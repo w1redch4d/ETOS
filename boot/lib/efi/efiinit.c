@@ -639,7 +639,7 @@ Return Value:
     //
     if (UsingWindowsOptions && !IdentifierSet) {
         OsPath = (PWINDOWS_OS_PATH)((PUCHAR)WindowsOptions + WindowsOptions->OsPathOffset);
-        if (OsPath->Length > FIELD_OFFSET(WINDOWS_OS_PATH, Data) && OsPath->Type == WINDOWS_OS_PATH_TYPE_EFI) {
+        if (OsPath->Length > FIELD_OFFSET(WINDOWS_OS_PATH, Data) && OsPath->Type == FILE_PATH_TYPE_EFI) {
             OsDevicePath = (EFI_DEVICE_PATH *)OsPath->Data;
 
             //

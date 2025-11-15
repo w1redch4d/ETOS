@@ -21,13 +21,40 @@ Abstract:
 
 #include "bootlib.h"
 
-NTSTATUS
-BmpLaunchBootEntry (
-    IN  PBOOT_APPLICATION_ENTRY BootEntry,
-    OUT PULONG                  EntryIndex,
-    IN  ULONG                   LaunchCode,
-    IN  BOOLEAN                 AllowRecovery
+//
+// Fiwmare services.
+//
+
+PWSTR
+BmFwInitializeBootDirectoryPath (
+    VOID
     );
+
+NTSTATUS
+BmpFwGetFullPath (
+    IN  PWSTR PartialPath,
+    OUT PWSTR *FullPath
+    );
+
+//
+// BCD services.
+//
+
+NTSTATUS
+BmGetDataStorePath (
+    OUT PDEVICE_IDENTIFIER *DeviceIdentifier,
+    OUT PWSTR              *FilePath,
+    OUT PBOOLEAN           FilePathFound
+    );
+
+NTSTATUS
+BmOpenDataStore (
+    PHANDLE DataStoreHandle
+    );
+
+//
+// Boot entry services.
+//
 
 NTSTATUS
 BmTransferExecution (
@@ -36,6 +63,17 @@ BmTransferExecution (
     OUT PBOOLEAN                CanRecover
     );
 
+NTSTATUS
+BmpLaunchBootEntry (
+    IN  PBOOT_APPLICATION_ENTRY BootEntry,
+    OUT PULONG                  EntryIndex,
+    IN  ULONG                   LaunchCode,
+    IN  BOOLEAN                 AllowRecovery
+    );
+
+//
+// Entry point.
+//
 NTSTATUS
 BmMain (
     IN PBOOT_APPLICATION_PARAMETERS ApplicationParameters

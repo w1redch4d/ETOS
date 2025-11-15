@@ -322,6 +322,22 @@ typedef struct {
 } DEVICE_IDENTIFIER, *PDEVICE_IDENTIFIER;
 
 //
+// File identifier.
+//
+
+#define FILE_IDENTIFIER_VERSION 1
+
+#define FILE_PATH_TYPE_INTERNAL 3
+#define FILE_PATH_TYPE_EFI      4
+
+typedef struct {
+    ULONG Version;
+    ULONG Length;
+    ULONG PathType;
+    WCHAR Path[ANYSIZE_ARRAY];
+} FILE_IDENTIFIER, *PFILE_IDENTIFIER;
+
+//
 // BCD element.
 //
 
@@ -636,9 +652,6 @@ typedef struct {
 
 #define WINDOWS_OS_OPTIONS_SIGNATURE 0x0053574f444e4957 /* "WINDOWS\0" */
 
-#define WINDOWS_OS_PATH_TYPE_INTERNAL 3
-#define WINDOWS_OS_PATH_TYPE_EFI      4
-
 #pragma pack(push,1)
 
 typedef struct {
@@ -669,6 +682,7 @@ extern ULONG BlpApplicationFlags;
 extern PBOOT_APPLICATION_PARAMETERS BlpApplicationParameters;
 extern BOOT_LIBRARY_PARAMETERS BlpLibraryParameters;
 extern BOOT_APPLICATION_ENTRY BlpApplicationEntry;
+extern PDEVICE_IDENTIFIER BlpBootDevice;
 extern PWSTR BlpApplicationBaseDirectory;
 extern BOOLEAN BlpApplicationIdentifierSet;
 

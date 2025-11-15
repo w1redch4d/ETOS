@@ -47,6 +47,7 @@ Return Value:
 {
     NTSTATUS Status;
     BOOT_LIBRARY_PARAMETERS LibraryParameters;
+    HANDLE DataStoreHandle; 
     PRETURN_DATA ReturnData;
 
 #if defined(__x86_64__) || defined(__i386__)
@@ -74,6 +75,21 @@ Return Value:
             ConsolePrint(L"BlInitializeLibrary failed 0x%x\r\n", Status);
         }
 
+        goto Exit;
+    }
+
+    //
+    // Initialize the boot directory.
+    //
+    BmFwInitializeBootDirectoryPath();
+
+    //
+    // Open the BCD.
+    //
+    DebugInfo(L"Opening BCD...\r\n");
+    Status = BmOpenDataStore(&DataStoreHandle);
+    if (!NT_SUCCESS(Status)) {
+        DebugError(L"Failed to open BCD\r\n");
         goto Exit;
     }
 

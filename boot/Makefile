@@ -11,7 +11,7 @@ ASFILES =
 LIBS = $(BUILDDIR)/../crt/crt.lib $(BUILDDIR)/../rtl/rtl.lib
 
 ifeq ($(APP),bootmgr)
-CFILES += app/bootmgr/bootmgr.c
+CFILES += $(addprefix app/bootmgr/,bcd.c bootmgr.c fw.c)
 endif
 
 ifeq ($(TARGET_ARCH),x64)
