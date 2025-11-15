@@ -242,6 +242,73 @@ Return Value:
 }
 
 NTSTATUS
+BlpBootOptionCallbackString (
+    IN  NTSTATUS       Status,
+    IN  PGUID          Identifier,
+    IN  BCDE_DATA_TYPE Type,
+    IN  PWSTR          DefaultString,
+    IN  ULONG          DefaultStringLength,
+    OUT PWSTR          *FilteredString,
+    OUT PULONG         FilteredStringLength
+    )
+
+/*++
+
+Routine Description:
+
+    Calls the BCD filter string callback, if registered.
+
+Arguments:
+
+    Status - The current status of the operation.
+
+    Identifier - Pointer to the requestor's unique identifier.
+
+    Type - The requested option type.
+
+    DefaultString - Pointer to a string containing the option's default value.
+
+    DefaultString - The length of DefaultString.
+
+    FilteredString - Pointer to a PWSTR that receives the address of the filtered string.
+
+    FilteredStringLength - Pointer to a ULONG that receives the length of FilteredString.
+
+Return Value:
+
+    Any status code returned by the callback if registered.
+
+    Status if no callback is registered.
+
+--*/
+
+{
+    //
+    // Run the callback.
+    //
+    if (BlpBootOptionCallbacks->String != NULL) {
+        return BlpBootOptionCallbacks->String(
+            BlpBootOptionCallbackCookie,
+            Status,
+            0,
+            Identifier,
+            Type,
+            DefaultString,
+            DefaultStringLength,
+            FilteredString,
+            FilteredStringLength
+        );
+    }
+
+    //
+    // Return default values if no callback is registered.
+    //
+    *FilteredString = DefaultString;
+    *FilteredStringLength = DefaultStringLength;
+    return Status;
+}
+
+NTSTATUS
 BlGetBootOptionDevice (
     IN  PBOOT_ENTRY_OPTION Options,
     IN  BCDE_DATA_TYPE     Type,
@@ -380,6 +447,121 @@ RunFilter:
     }
 
     return Status;
+}
+
+NTSTATUS
+BlGetBootOptionString (
+    IN  PBOOT_ENTRY_OPTION Options,
+    IN  BCDE_DATA_TYPE     Type,
+    OUT PWSTR              *StringOut
+    )
+
+/*++
+
+Routine Description:
+
+    Retrieves a boot option of type Type as a string.
+
+Arguments:
+
+    Options - Pointer to the boot option list.
+
+    Type - The type of option to search for.
+
+    String - Receives a pointer to a buffer containing the string.
+
+Return Value:
+
+    STATUS_SUCCESS if successful.
+
+    STATUS_INVALID_PARAMETER if Type is not of format BCDE_FORAMT_STRING.
+
+    STATUS_NOT_FOUND if no matching option could be found.
+
+    STATUS_NO_MEMORY if memory allocation fails.
+
+    STATUS_INTEGER_OVERFLOW if an integer overflow occurs.
+
+    Any other status value returned by the BCD filter callback.
+
+--*/
+
+{
+    NTSTATUS Status;
+    PBOOT_ENTRY_OPTION Option;
+    PWSTR DefaultString, FilteredString, FinalString;
+    ULONG DefaultStringLength, FilteredStringLength, FinalStringSize;
+    size_t FilteredStringSize;
+
+    //
+    // Validate the requested option type.
+    //
+    if ((Type & BCDE_FORMAT_MASK) != BCDE_FORMAT_STRING) {
+        return STATUS_INVALID_PARAMETER;
+    }
+
+    //
+    // Find an option of the requested type.
+    //
+    Option = BcdUtilGetBootOption(Options, Type);
+    if (Option != NULL) {
+        Status = STATUS_SUCCESS;
+        DefaultString = (PWSTR)((ULONG_PTR)Option + Option->DataOffset);
+        DefaultStringLength = Option->DataSize / sizeof(WCHAR);
+    } else {
+        Status = STATUS_NOT_FOUND;
+        DefaultString = NULL;
+        DefaultStringLength = 0;
+    }
+
+    //
+    // Pass through BCD filter callback if registered.
+    //
+    FilteredString = DefaultString;
+    FilteredStringLength = DefaultStringLength;
+    if (BlpBootOptionCallbacks != NULL) {
+        Status = BlpBootOptionCallbackString(
+            Status,
+            BlGetApplicationIdentifier(),
+            Type,
+            DefaultString,
+            DefaultStringLength,
+            &FilteredString,
+            &FilteredStringLength
+        );
+    }
+
+    //
+    // Return if no option was found.
+    //
+    if (!NT_SUCCESS(Status)) {
+        return Status;
+    }
+
+    //
+    // Calculate the size of the filtered string.
+    //
+    FilteredStringSize = (FilteredStringLength * sizeof(WCHAR)) + sizeof(UNICODE_NULL);
+    if (FilteredStringSize > MAXULONG) {
+        return STATUS_INTEGER_OVERFLOW;
+    }
+
+    //
+    // Copy the string.
+    //
+    FinalStringSize = (ULONG)FilteredStringSize;
+    FinalString = BlMmAllocateHeap(FinalStringSize);
+    if (FinalString == NULL) {
+        return STATUS_NO_MEMORY;
+    }
+    RtlMoveMemory(FinalString, FilteredString, FinalStringSize - sizeof(UNICODE_NULL));
+    FinalString[FilteredStringLength] = UNICODE_NULL;
+
+    //
+    // Return result.
+    //
+    *StringOut = FinalString;
+    return STATUS_SUCCESS;
 }
 
 NTSTATUS

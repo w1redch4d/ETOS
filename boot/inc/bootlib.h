@@ -574,6 +574,20 @@ NTSTATUS
 
 typedef
 NTSTATUS
+(*PBOOT_OPTION_CALLBACK_STRING) (
+    IN  ULONGLONG      Cookie,
+    IN  NTSTATUS       Status,
+    IN  ULONG          Unknown,
+    IN  PGUID          Identifier,
+    IN  BCDE_DATA_TYPE Type,
+    IN  PWSTR          DefaultString,
+    IN  ULONG          DefaultStringLength,
+    OUT PWSTR          *FilteredString,
+    OUT PULONG         FilteredStringLength
+    );
+
+typedef
+NTSTATUS
 (*PBOOT_OPTION_CALLBACK_BOOLEAN) (
     IN  ULONGLONG      Cookie,
     IN  NTSTATUS       Status,
@@ -586,7 +600,7 @@ NTSTATUS
 typedef struct {
     PBOOT_OPTION_CALLBACK_BOOLEAN Boolean;
     PVOID                         Integer;
-    PVOID                         String;
+    PBOOT_OPTION_CALLBACK_STRING  String;
     PBOOT_OPTION_CALLBACK_DEVICE  Device;
 } BOOT_OPTION_CALLBACKS, *PBOOT_OPTION_CALLBACKS;
 
@@ -706,6 +720,13 @@ BlGetBootOptionDevice (
     IN  BCDE_DATA_TYPE     Type,
     OUT PDEVICE_IDENTIFIER *Identifier,
     OUT PBOOT_ENTRY_OPTION *AdditionalOptions OPTIONAL
+    );
+
+NTSTATUS
+BlGetBootOptionString (
+    IN  PBOOT_ENTRY_OPTION Options,
+    IN  BCDE_DATA_TYPE     Type,
+    OUT PWSTR              *String
     );
 
 NTSTATUS
