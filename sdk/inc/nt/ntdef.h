@@ -318,7 +318,7 @@ typedef CONST UNICODE_STRING *PCUNICODE_STRING;
 // Struct helpers.
 //
 #define FIELD_OFFSET(Type, Field) ((LONG)(LONG_PTR)&(((Type *) 0)->Field))
-#define CONTAINING_RECORD(Address, Type, Field) ((Type *)((PUCHAR)(Address) - (ULONG_PTR)(&((Type *) 0)->Field)))
+#define CONTAINING_RECORD(Address, Type, Field) ((Type *)((ULONG_PTR)(Address) - (ULONG_PTR)(&((Type *) 0)->Field)))
 
 //
 // Minimum/maximum helpers.

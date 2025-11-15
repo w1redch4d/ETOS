@@ -77,9 +77,9 @@ Return Value:
     //
     // Obtain pointers to auxillary structures.
     //
-    BootEntry = (PBOOT_APPLICATION_TRANSITION_ENTRY)((PUCHAR)ApplicationParameters + ApplicationParameters->BootEntryOffset);
-    MemoryInfo = (PMEMORY_INFO)((PUCHAR)ApplicationParameters + ApplicationParameters->MemoryInfoOffset);
-    FirmwareData = (PFIRMWARE_DATA)((PUCHAR)ApplicationParameters + ApplicationParameters->FirmwareDataOffset);
+    BootEntry = (PBOOT_APPLICATION_TRANSITION_ENTRY)((ULONG_PTR)ApplicationParameters + ApplicationParameters->BootEntryOffset);
+    MemoryInfo = (PMEMORY_INFO)((ULONG_PTR)ApplicationParameters + ApplicationParameters->MemoryInfoOffset);
+    FirmwareData = (PFIRMWARE_DATA)((ULONG_PTR)ApplicationParameters + ApplicationParameters->FirmwareDataOffset);
 
     //
     // Validate application entry.

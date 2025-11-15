@@ -326,7 +326,7 @@ Return Value:
     // Translate the device path into a device identifier.
     //
     RtlZeroMemory(Option, sizeof(*Option));
-    DeviceElement = (PBCDE_DEVICE)((PUCHAR)Option + sizeof(BOOT_ENTRY_OPTION));
+    DeviceElement = (PBCDE_DEVICE)((ULONG_PTR)Option + sizeof(BOOT_ENTRY_OPTION));
     Status = EfiInitTranslateDevicePath(
         EfiDevicePath,
         &DeviceElement->Identifier,
@@ -397,7 +397,7 @@ Return Value:
     Option->DataSize = 0;
     BufferRemaining = BufferSize - sizeof(BOOT_ENTRY_OPTION);
     Node = EfiFilePath;
-    PathStart = (PWCHAR)((PUCHAR)Option + Option->DataOffset);
+    PathStart = (PWCHAR)((ULONG_PTR)Option + Option->DataOffset);
     Position = PathStart;
     while (!IsDevicePathEndType(Node)) {
         //
@@ -429,7 +429,7 @@ Return Value:
         //
         Option->DataSize += Appended;
         BufferRemaining -= Appended;
-        Position = (PWCHAR)((PUCHAR)Position + Appended);
+        Position = (PWCHAR)((ULONG_PTR)Position + Appended);
         Node = NextDevicePathNode(Node);
     }
 
@@ -569,7 +569,7 @@ Return Value:
     IdentifierSet = FALSE;
     if (LoadOptions != NULL && (IdentifierOption = wcsstr(OptionsString, L"BCDOBJECT=")) != NULL) {
         EfiDebugTrace(L"found BCDOBJECT option\r\n");
-        RtlInitUnicodeString(&UnicodeString, (PWSTR)((PUCHAR)IdentifierOption + sizeof(L"BCDOBJECT=") - sizeof(UNICODE_NULL)));
+        RtlInitUnicodeString(&UnicodeString, (PWSTR)((ULONG_PTR)IdentifierOption + sizeof(L"BCDOBJECT=") - sizeof(UNICODE_NULL)));
         Status = RtlGUIDFromString(&UnicodeString, &Entry->Identifier);
         if (NT_SUCCESS(Status)) {
             IdentifierSet = TRUE;
@@ -598,7 +598,7 @@ Return Value:
         Option->IsInvalid = TRUE;
         goto Quit;
     }
-    BootDeviceElement = (PBCDE_DEVICE)((PUCHAR)Option + Option->DataOffset);
+    BootDeviceElement = (PBCDE_DEVICE)((ULONG_PTR)Option + Option->DataOffset);
     *BootDevice = &BootDeviceElement->Identifier;
     Size = BlGetBootOptionSize(Option);
     OptionsSize += Size;
@@ -608,7 +608,7 @@ Return Value:
     // Convert the EFI file path into a boot file path option.
     //
     PreviousOption = Option;
-    Option = (PBOOT_ENTRY_OPTION)((PUCHAR)&Entry->InlineOptions + OptionsSize);
+    Option = (PBOOT_ENTRY_OPTION)((ULONG_PTR)&Entry->InlineOptions + OptionsSize);
     if (BootDeviceElement->Identifier.Type == DEVICE_TYPE_NETWORK) {
         Status = EfiInitConvertEfiPxeFilePath(
             SystemTable,
@@ -638,7 +638,7 @@ Return Value:
     // Parse OS path if no BCD identifier was set.
     //
     if (UsingWindowsOptions && !IdentifierSet) {
-        OsPath = (PWINDOWS_OS_PATH)((PUCHAR)WindowsOptions + WindowsOptions->OsPathOffset);
+        OsPath = (PWINDOWS_OS_PATH)((ULONG_PTR)WindowsOptions + WindowsOptions->OsPathOffset);
         if (OsPath->Length > FIELD_OFFSET(WINDOWS_OS_PATH, Data) && OsPath->Type == FILE_PATH_TYPE_EFI) {
             OsDevicePath = (EFI_DEVICE_PATH *)OsPath->Data;
 
@@ -646,7 +646,7 @@ Return Value:
             // Convert OS loader device path.
             //
             PreviousOption = Option;
-            Option = (PBOOT_ENTRY_OPTION)((PUCHAR)&Entry->InlineOptions + OptionsSize);
+            Option = (PBOOT_ENTRY_OPTION)((ULONG_PTR)&Entry->InlineOptions + OptionsSize);
             Status = EfiInitpConvertEfiDevicePath(
                 OsDevicePath,
                 BCDE_OS_LOADER_TYPE_OS_DEVICE,
@@ -666,7 +666,7 @@ Return Value:
             // Convert OS loader file path.
             //
             PreviousOption = Option;
-            Option = (PBOOT_ENTRY_OPTION)((PUCHAR)&Entry->InlineOptions + OptionsSize);
+            Option = (PBOOT_ENTRY_OPTION)((ULONG_PTR)&Entry->InlineOptions + OptionsSize);
             Status = EfiInitpConvertEfiFilePath(
                 OsDevicePath,
                 BCDE_OS_LOADER_TYPE_SYSTEM_ROOT,
@@ -1001,7 +1001,7 @@ Return Value:
     //
     // The path must begin with a "\".
     //
-    Destination = (PWSTR)((PUCHAR)Option + Option->DataOffset);
+    Destination = (PWSTR)((ULONG_PTR)Option + Option->DataOffset);
     if (BootpBootFile[0] != '\\') {
         TotalSize += sizeof(L'\\');
         if (BufferSize < TotalSize) {

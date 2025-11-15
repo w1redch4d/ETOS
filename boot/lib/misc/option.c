@@ -56,7 +56,7 @@ Return Value:
 
     NextOptionOffset = 0;
     do {
-        Option = (PBOOT_ENTRY_OPTION)((PUCHAR)Options + NextOptionOffset);
+        Option = (PBOOT_ENTRY_OPTION)((ULONG_PTR)Options + NextOptionOffset);
         if (Option->Type == Type && !Option->IsInvalid) {
             return Option;
         }
@@ -65,7 +65,7 @@ Return Value:
         // Recursively search additional options.
         //
         if (Option->AdditionalOptionsOffset != 0) {
-            Option = BcdUtilGetBootOption((PBOOT_ENTRY_OPTION)((PUCHAR)Option + Option->AdditionalOptionsOffset), Type);
+            Option = BcdUtilGetBootOption((PBOOT_ENTRY_OPTION)((ULONG_PTR)Option + Option->AdditionalOptionsOffset), Type);
             if (Option != NULL) {
                 return Option;
             }
@@ -111,7 +111,7 @@ Return Value:
     // Recursively add size of additional options.
     //
     if (Option->AdditionalOptionsOffset != 0) {
-        TotalSize += BlGetBootOptionListSize((PBOOT_ENTRY_OPTION)((PUCHAR)Option + Option->AdditionalOptionsOffset));
+        TotalSize += BlGetBootOptionListSize((PBOOT_ENTRY_OPTION)((ULONG_PTR)Option + Option->AdditionalOptionsOffset));
     }
 
     return TotalSize;
@@ -145,7 +145,7 @@ Return Value:
     TotalSize = 0;
     Offset = 0;
     do {
-        Option = (PBOOT_ENTRY_OPTION)((PUCHAR)Options + Offset);
+        Option = (PBOOT_ENTRY_OPTION)((ULONG_PTR)Options + Offset);
         Offset = Option->NextOptionOffset;
         TotalSize += BlGetBootOptionSize(Option);
     } while (Offset != 0);
@@ -213,14 +213,14 @@ Return Value:
     // Copy the option data.
     //
     RtlMoveMemory(Buffer, OptionsA, SizeA);
-    RtlMoveMemory((PUCHAR)Buffer + SizeA, OptionsB, SizeB);
+    RtlMoveMemory((PVOID)((ULONG_PTR)Buffer + SizeA), OptionsB, SizeB);
 
     //
     // Seek to the end of the first list.
     //
     NextOptionOffset = 0;
     do {
-        Option = (PBOOT_ENTRY_OPTION)((PUCHAR)Buffer + NextOptionOffset);
+        Option = (PBOOT_ENTRY_OPTION)((ULONG_PTR)Buffer + NextOptionOffset);
         NextOptionOffset = Option->NextOptionOffset;
     } while (NextOptionOffset != 0);
 
@@ -234,7 +234,7 @@ Return Value:
         }
 
         Option->NextOptionOffset = RealOffset;
-        Option = (PBOOT_ENTRY_OPTION)((PUCHAR)Buffer + RealOffset);
+        Option = (PBOOT_ENTRY_OPTION)((ULONG_PTR)Buffer + RealOffset);
         NextOptionOffset = Option->NextOptionOffset;
     } while (NextOptionOffset != 0);
 
@@ -615,7 +615,7 @@ Return Value:
     Option = BcdUtilGetBootOption(Options, Type);
     if (Option != NULL) {
         Status = STATUS_SUCCESS;
-        Value = *(PBOOLEAN)((PUCHAR)Option + Option->DataOffset);
+        Value = *(PBOOLEAN)((ULONG_PTR)Option + Option->DataOffset);
     } else {
         Status = STATUS_NOT_FOUND;
     }
@@ -792,7 +792,7 @@ Return Value:
     Option->Type = Type;
     Option->DataOffset = sizeof(BOOT_ENTRY_OPTION);
     Option->DataSize = DataSize;
-    wcscpy_s((PWSTR)((PUCHAR)Option + Option->DataOffset), Option->DataSize / sizeof(WCHAR), String);
+    wcscpy_s((PWSTR)((ULONG_PTR)Option + Option->DataOffset), Option->DataSize / sizeof(WCHAR), String);
 
     //
     // Append option to list and free allocated memory.

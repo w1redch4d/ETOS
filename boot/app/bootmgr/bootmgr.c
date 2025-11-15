@@ -104,7 +104,7 @@ Return Value:
     }
 
 Exit:
-    ReturnData = (PRETURN_DATA)((PUCHAR)ApplicationParameters + ApplicationParameters->ReturnDataOffset);
+    ReturnData = (PRETURN_DATA)((ULONG_PTR)ApplicationParameters + ApplicationParameters->ReturnDataOffset);
     ReturnData->Version = RETURN_DATA_VERSION;
     ReturnData->Status = Status;
     BlDestroyLibrary();
