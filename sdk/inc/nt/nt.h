@@ -19,6 +19,8 @@ Abstract:
 #ifndef _NT_H
 #define _NT_H
 
+#include <stdarg.h>
+
 #include <ntdef.h>
 #include <ntstatus.h>
 #include <ntimage.h>
