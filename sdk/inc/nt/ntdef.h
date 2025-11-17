@@ -76,6 +76,34 @@ Abstract:
 #endif
 
 //
+// Routine does not return.
+//
+#ifndef NORETURN
+    #if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+        #define NORETURN _Noreturn
+    #elif defined(__clang__) || defined(__GNUC__)
+        #define NORETURN __attribute__((noreturn))
+    #else
+        #warning Unable to define NORETURN
+        #define NORETURN
+    #endif
+#endif
+
+//
+// Execution is undefined.
+//
+#ifndef UNREACHABLE
+    #if defined(__clang__) || defined(__GNUC__)
+        #define UNREACHABLE() __builtin_unreachable()
+    #elif defined(_MSC_VER)
+        #define UNREACHABLE() __assume(false)
+    #else
+        #warning Unable to define UNREACHABLE
+        #define UNREACHABLE()
+    #endif
+#endif
+
+//
 // NT calling convention.
 //
 #ifndef NTAPI
