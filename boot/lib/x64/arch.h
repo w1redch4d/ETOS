@@ -116,29 +116,30 @@ Abstract:
 #define IA32_MISC_ENABLE          0x000001a0
 #define IA32_EFER                 0xc0000080
 
+//
+// EFER (Extended Feature Enable Register) bits.
+//
 #define IA32_EFER_NXE (1 << 11)
 
 //
-// Boot library CPU vendor IDs.
+// CPUID function IDs.
 //
-#define CPU_VENDOR_UNKNOWN 0
-#define CPU_VENDOR_AMD     1
-#define CPU_VENDOR_INTEL   2
-#define CPU_VENDOR_CENTAUR 3
-
-//
-// CPUID return data.
-//
-
 #define CPUID_FUNCTION_GET_VENDOR            0x00000000
 #define CPUID_FUNCTION_GET_FEATURES          0x00000001
 #define CPUID_FUNCTION_GET_XSAVE_FEATURES    0x0000000d
 #define CPUID_FUNCTION_GET_EXTENDED_FEATURES 0x80000001
 
-#define CPUID_VENDOR_STRING_LENGTH 4
+//
+// CPUID vendor strings.
+//
+#define CPUID_VENDOR_STRING_LENGTH 12
 #define CPUID_VENDOR_STRING_INTEL   "GenuineIntel"
 #define CPUID_VENDOR_STRING_AMD     "AuthenticAMD"
 #define CPUID_VENDOR_STRING_CENTAUR "CentaurHauls"
+
+//
+// CPUID feature bits.
+//
 
 #define CPUID_FEATURE_ECX_XSAVE (1 << 26)
 
@@ -150,12 +151,53 @@ Abstract:
 #define CPUID_XSAVE_FEATURE_XSS         (1 << 3)
 #define CPUID_XSAVE_FEATURE_XFD         (1 << 4)
 
+//
+// CPUID return data.
+//
 typedef struct {
     ULONG Eax;
     ULONG Ebx;
     ULONG Ecx;
     ULONG Edx;
 } CPUID_DATA, *PCPUID_DATA;
+
+//
+// Boot library CPU vendor IDs.
+//
+#define CPU_VENDOR_UNKNOWN 0
+#define CPU_VENDOR_AMD     1
+#define CPU_VENDOR_INTEL   2
+#define CPU_VENDOR_CENTAUR 3
+
+//
+// IDT (Interrupt Descriptor Table) entry.
+//
+typedef struct _KIDTENTRY64 {
+    union {
+        struct {
+            USHORT OffsetLow;
+            USHORT Selector;
+            USHORT IstIndex : 3;
+            USHORT Reserved0 : 5;
+            USHORT Type : 5;
+            USHORT Dpl : 2;
+            USHORT Present : 1;
+            USHORT OffsetMiddle;
+            ULONG  OffsetHigh;
+            ULONG  Reserved1;
+        };
+
+        ULONGLONG Alignment;
+    };
+} KIDTENTRY64, *PKIDTENTRY64;
+
+//
+// TXT private space.
+//
+typedef struct {
+    UCHAR    Unknown[48];
+    NTSTATUS Status;
+} TXT_PRIVATE_SPACE, *PTXT_PRIVATE_SPACE;
 
 //
 // Control register services.
@@ -260,6 +302,11 @@ Return Value:
 
 #define __writemsr(Register, Value) asm volatile("wrmsr": :"c"(Register), "A"(Value))
 
+USHORT
+BlpArchGetCodeSegmentSelector (
+    VOID
+    );
+
 UCHAR
 BlArchIsFiveLevelPagingActive (
     VOID
@@ -279,6 +326,17 @@ BlArchIsCpuIdFunctionSupported (
 
 ULONG
 BlArchGetCpuVendor (
+    VOID
+    );
+
+VOID
+BlpArchInstallTrapVectors (
+    VOID
+    );
+
+VOID
+NORETURN
+BlpTxtUnhandledException (
     VOID
     );
 

@@ -570,3 +570,46 @@ Return Value:
 
     return EfiGetNtStatusCode(EfiStatus);
 }
+
+VOID
+NORETURN
+EfiResetSystem (
+    IN EFI_RESET_TYPE ResetType
+    )
+
+/*++
+
+Routine Description:
+
+    Wrapper around ResetSystem.
+
+Arguments:
+
+    ResetType - The kind of reset to perform.
+
+Return Value:
+
+    Does not return.
+
+--*/
+
+{
+    EXECUTION_CONTEXT_TYPE ContextType;
+
+    ContextType = CurrentExecutionContext->Type;
+    if (ContextType != ExecutionContextFirmware && EfiBS != NULL) {
+        BlpArchSwitchContext(ExecutionContextFirmware);
+    }
+
+    EfiRT->ResetSystem(
+        ResetType,
+        EFI_SUCCESS,
+        0,
+        NULL
+    );
+
+    //
+    // ResetSystem must never return.
+    //
+    UNREACHABLE();
+}

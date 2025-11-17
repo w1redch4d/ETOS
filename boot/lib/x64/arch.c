@@ -24,12 +24,54 @@ Abstract:
 
 #define REQUIRED_XSAVE_FEATURES (CPUID_XSAVE_FEATURE_XSAVEOPT | CPUID_XSAVE_FEATURE_XSAVEC | CPUID_XSAVE_FEATURE_XGETBV_ECX1)
 
+#define SET_IDT_ENTRY(_Base, _Index, _Present, _Type, _Selector, _Offset, _Dpl, _IstIndex) \
+    { \
+        PKIDTENTRY64 _Entry; \
+        _Entry = &(((PKIDTENTRY64)(_Base))[(_Index)]); \
+        _Entry->OffsetLow = (USHORT)(ULONG_PTR)(_Offset); \
+        _Entry->Selector = (_Selector); \
+        _Entry->IstIndex = (_IstIndex); \
+        _Entry->Reserved0 = 0; \
+        _Entry->Type = (_Type); \
+        _Entry->Dpl = (_Dpl); \
+        _Entry->Present = (_Present); \
+        _Entry->OffsetMiddle = (USHORT)((ULONG)(ULONG_PTR)(_Offset) >> 16); \
+        _Entry->OffsetHigh = (ULONG)((ULONGLONG)(ULONG_PTR)(_Offset) >> 32); \
+        _Entry->Reserved1 = 0; \
+    }
+
+#define SET_IDT_ENTRY_TRAP(_Base, _Index, _Present, _Selector, _Offset, _Dpl, _IstIndex) SET_IDT_ENTRY(_Base, _Index, _Present, 0xe, _Selector, _Offset, _Dpl, _IstIndex)
+
 EXECUTION_CONTEXT ApplicationExecutionContext, FirmwareExecutionContext;
 PEXECUTION_CONTEXT CurrentExecutionContext = NULL;
+PTXT_PRIVATE_SPACE TxtPrivateSpace = NULL;
 BOOLEAN ArchForceNx = FALSE;
 BOOLEAN ArchDisableNx = FALSE;
 ULONG ArchCr4BitsToClear = 0;
 ULONG ArchXCr0BitsToClear = 0;
+
+VOID
+ArchTrapNoProcess (
+    VOID
+    );
+
+/*++
+
+Routine Description:
+
+    Receives a trap interrupt without processing it.
+
+    Implemented in archasm.S.
+
+Arguments:
+
+    None.
+
+Return Value:
+
+    None.
+
+--*/
 
 VOID
 Archpx64EnableInterruptsAsm (
@@ -70,6 +112,52 @@ Routine Description:
 Arguments:
 
     None.
+
+Return Value:
+
+    None.
+
+--*/
+
+VOID
+ArchGetIdtRegister (
+    OUT PDESCRIPTOR_TABLE_REGISTER Idtr
+    );
+
+/*++
+
+Routine Description:
+
+    Gets the current value of IDTR (IDT Register).
+
+    Implemented in archasm.S.
+
+Arguments:
+
+    Idtr - Pointer to a DESCRIPTOR_TABLE_REGISTER that receives the value of IDTR.
+
+Return Value:
+
+    None.
+
+--*/
+
+VOID
+ArchSetIdtRegister (
+    IN PDESCRIPTOR_TABLE_REGISTER Idtr
+    );
+
+/*++
+
+Routine Description:
+
+    Loads a new value into IDTR (IDT Register).
+
+    Implemented in archasm.S.
+
+Arguments:
+
+    Idtr - Pointer to the value to load into IDTR.
 
 Return Value:
 
@@ -315,6 +403,9 @@ Return Value:
         return;
     }
 
+    //
+    // Enable XSAVE.
+    //
     Cr4 = __readcr4();
     if (!(Cr4 & CR4_OSXSAVE)) {
         Cr4 |= CR4_OSXSAVE;
@@ -322,6 +413,9 @@ Return Value:
         ArchCr4BitsToClear = CR4_OSXSAVE;
     }
 
+    //
+    // Enable XSAVE for AVX state.
+    //
     XCr0 = _xgetbv(0);
     if (!(XCr0 & XCR0_AVX)) {
         XCr0 |= XCR0_AVX;
@@ -453,6 +547,29 @@ Return Value:
     //
     ArchEnableProcessorFeatures();
 }
+
+USHORT
+BlpArchGetCodeSegmentSelector (
+    VOID
+    );
+
+/*++
+
+Routine Description:
+
+    Gets the current value of CS.
+
+    Implemented in archasm.S.
+
+Arguments:
+
+    None.
+
+Return Value:
+
+    The current value of CS.
+
+--*/
 
 UCHAR
 BlArchIsFiveLevelPagingActive (
@@ -593,7 +710,7 @@ BlpArchInstallTrapVectors (
 
 Routine Description:
 
-    Installs trap vectors to handle exceptions.
+    Installs trap vectors to handle interrupts.
 
 Arguments:
 
@@ -606,9 +723,29 @@ Return Value:
 --*/
 
 {
+    DESCRIPTOR_TABLE_REGISTER Idtr;
+    USHORT Cs;
+
     //
-    // TODO: Implement this routine.
+    // Get current state.
     //
+    ArchGetIdtRegister(&Idtr);
+
+    //
+    // Install trap handler entries.
+    //
+    Cs = BlpArchGetCodeSegmentSelector();
+    SET_IDT_ENTRY_TRAP(Idtr.Base, 0x03, 1, Cs, ArchTrapNoProcess, 0, 0);
+    SET_IDT_ENTRY_TRAP(Idtr.Base, 0x2c, 1, Cs, ArchTrapNoProcess, 0, 0);
+    SET_IDT_ENTRY_TRAP(Idtr.Base, 0x2d, 1, Cs, ArchTrapNoProcess, 0, 0);
+    if (BlpEnvironmentState & ENVIRONMENT_STATE_HANDLE_DOUBLE_FAULTS) {
+        SET_IDT_ENTRY_TRAP(Idtr.Base, 0x08, 1, Cs, BlpTxtUnhandledException, 0, 0);
+    }
+
+    //
+    // Reload to apply changes.
+    //
+    ArchSetIdtRegister(&Idtr);
 }
 
 VOID
@@ -734,14 +871,49 @@ Return Value:
         return STATUS_SUCCESS;
     }
 
+    DebugInfo(L"Initializing architecture services (phase 1/1)...\r\n");
+
     //
-    // Install trap vectors to handle exceptions.
+    // Install trap vectors to handle breakpoints and exceptions.
     //
-    if (!(BlpApplicationEntry.Attributes & BOOT_ENTRY_NO_TRAP_VECTORS)) {
+    if (!(BlpApplicationEntry.Attributes & BOOT_ENTRY_DEBUGGER_CONNECTED)) {
         BlpArchInstallTrapVectors();
     }
 
     return STATUS_SUCCESS;
+}
+
+VOID
+NORETURN
+BlpTxtUnhandledException (
+    VOID
+    )
+
+/*++
+
+Routine Description:
+
+    Handles an unhandled exception by rebooting the system.
+
+Arguments:
+
+    None.
+
+Return Value:
+
+    Does not return.
+
+--*/
+
+{
+    if (TxtPrivateSpace != NULL) {
+        TxtPrivateSpace->Status = 0xC0018001;
+    }
+
+    //
+    // Reboot the system.
+    //
+    BlFwReboot();
 }
 
 BOOLEAN

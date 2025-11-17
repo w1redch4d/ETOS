@@ -31,6 +31,10 @@ SetSegmentRegisters:
     movw 0x20(%rcx), %ss
     retq
 
+.globl ArchTrapNoProcess
+ArchTrapNoProcess:
+    iretq
+
 .globl Archpx64EnableInterruptsAsm
 Archpx64EnableInterruptsAsm:
     sti
@@ -39,6 +43,16 @@ Archpx64EnableInterruptsAsm:
 .globl Archpx64DisableInterruptsAsm
 Archpx64DisableInterruptsAsm:
     cli
+    retq
+
+.globl ArchGetIdtRegister
+ArchGetIdtRegister:
+    sidtq (%rcx)
+    retq
+
+.globl ArchSetIdtRegister
+ArchSetIdtRegister:
+    lidtq (%rcx)
     retq
 
 .globl ArchSetDescriptorTableContext
@@ -50,6 +64,11 @@ ArchSetDescriptorTableContext:
     lea SetSegmentRegisters(%rip), %rax
     pushq %rax
     lretq
+
+.globl BlpArchGetCodeSegmentSelector
+BlpArchGetCodeSegmentSelector:
+    movw %cs, %ax
+    retq
 
 .globl BlpArchGetDescriptorTableContext
 BlpArchGetDescriptorTableContext:

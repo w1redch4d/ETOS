@@ -141,6 +141,12 @@ EfiFreePool (
     IN VOID *Buffer
     );
 
+VOID
+NORETURN
+EfiResetSystem (
+    IN EFI_RESET_TYPE ResetType
+    );
+
 //
 // File path services.
 //

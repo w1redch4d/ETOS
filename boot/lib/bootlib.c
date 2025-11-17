@@ -30,6 +30,7 @@ BOOT_APPLICATION_ENTRY BlpApplicationEntry;
 PDEVICE_IDENTIFIER BlpBootDevice;
 PWSTR BlpApplicationBaseDirectory;
 BOOLEAN BlpApplicationIdentifierSet = FALSE;
+ULONG BlpEnvironmentState = 0;
 ULONG BlPlatformFlags = 0x2a0000 | PLATFORM_FLAG_FIRMWARE_EXECUTION_CONTEXT_SUPPORTED;
 
 NTSTATUS
@@ -96,9 +97,9 @@ Return Value:
     BlpBootDevice = (PDEVICE_IDENTIFIER)((ULONG_PTR)ApplicationParameters + ApplicationParameters->BootDeviceOffset);
 
     //
-    // ???
+    // Break to the debugger if connected.
     //
-    if (BootEntry->Attributes & BOOT_ENTRY_NO_TRAP_VECTORS) {
+    if (BootEntry->Attributes & BOOT_ENTRY_DEBUGGER_CONNECTED) {
         __debugbreak();
     }
 
@@ -124,6 +125,7 @@ Return Value:
         Attributes |= BOOT_ENTRY_OPTIONS_EXTERNAL;
     }
     BlpApplicationEntry.Attributes = Attributes;
+    BlpApplicationEntry.Options = &BootEntry->InlineOptions;
 
     //
     // Use whichever BCD identifier is available.
@@ -136,11 +138,6 @@ Return Value:
     } else {
         RtlZeroMemory(&BlpApplicationEntry.Identifier, sizeof(BlpApplicationEntry.Identifier));
     }
-
-    //
-    // Use inline options.
-    //
-    BlpApplicationEntry.Options = &BootEntry->InlineOptions;
 
     //
     // Begin architecture-specific initialization.
@@ -172,6 +169,14 @@ Return Value:
     // Complete firmware-specific initialization.
     //
     Status = BlpFwInitialize(1, FirmwareData);
+    if (!NT_SUCCESS(Status)) {
+        goto Phase2Failed;
+    }
+
+    //
+    // Complete architecture-specific initialization.
+    //
+    Status = BlpArchInitialize(1);
     if (!NT_SUCCESS(Status)) {
         goto Phase2Failed;
     }

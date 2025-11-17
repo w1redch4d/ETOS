@@ -34,6 +34,7 @@ BlpFwAppLoadCallback (
     IN ULONG Unknown0,
     IN ULONG Unknown1
     )
+
 /*++
 
 Routine Description:
@@ -68,6 +69,39 @@ Return Value:
     //
     // TODO: Finish implementing this routine.
     //
+}
+
+VOID
+NORETURN
+BlFwReboot (
+    VOID
+    )
+
+/*++
+
+Routine Description:
+
+    Resets the system.
+
+Arguments:
+
+    None.
+
+Return Value:
+
+    Does not return.
+
+--*/
+
+{
+    //
+    // TODO: Finish implementing this routine.
+    //
+
+    //
+    // Reset the system.
+    //
+    EfiResetSystem(EfiResetCold);
 }
 
 NTSTATUS
