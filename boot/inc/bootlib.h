@@ -93,6 +93,7 @@ typedef ULONG MEMORY_TYPE;
 // Memory types.
 //
 #define MEMORY_TYPE_BOOT_APPLICATION      0xd0000002
+#define MEMORY_TYPE_HEAP                  0xd0000005
 #define MEMORY_TYPE_UNKNOWN_D0000013      0xd0000013
 #define MEMORY_TYPE_FREE                  0xf0000001
 #define MEMORY_TYPE_UNUSABLE              0xf0000002
@@ -154,6 +155,15 @@ typedef struct {
     PLIST_ENTRY                 Current;
     MEMORY_DESCRIPTOR_LIST_TYPE Type;
 } MEMORY_DESCRIPTOR_LIST, *PMEMORY_DESCRIPTOR_LIST;
+
+//
+// Memory address range.
+//
+
+typedef struct {
+    ULONG_PTR Minimum;
+    ULONG_PTR Maximum;
+} ADDRESS_RANGE, *PADDRESS_RANGE;
 
 //
 // Hard disk identifier.
@@ -818,6 +828,16 @@ BlpMmInitialize (
     IN PMEMORY_INFO             MemoryInfo,
     IN ULONG                    TranslationType,
     IN PBOOT_LIBRARY_PARAMETERS LibraryParameters
+    );
+
+NTSTATUS
+BlMmAllocatePagesInRange (
+    IN OUT PVOID          *Address,
+    IN     ULONG_PTR      Pages,
+    IN     ULONG          MemoryType,
+    IN     ULONG          AllocationAttributes,
+    IN     PADDRESS_RANGE Range OPTIONAL,
+    IN     ULONG          Unknown
     );
 
 PVOID

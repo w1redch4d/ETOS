@@ -72,6 +72,59 @@ Return Value:
 }
 
 NTSTATUS
+BlMmAllocatePagesInRange (
+    IN OUT PVOID          *Address,
+    IN     ULONG_PTR      Pages,
+    IN     ULONG          MemoryType,
+    IN     ULONG          AllocationAttributes,
+    IN     PADDRESS_RANGE Range OPTIONAL,
+    IN     ULONG          Unknown
+    )
+
+/*++
+
+Routine Description:
+
+    Allocates pages in the requested range.
+
+Arguments:
+
+    Address - Pointer to the address to allocate at (receives the allocated address).
+
+    PageCount - The number of pages to allocate.
+
+    MemoryType - The type of memory to allocate.
+
+    AllocationAttributes - Attributes specifying the allocation method.
+
+    Range - Pointer to the range descriptor or NULL.
+
+    Unknown - Ignored.
+
+Return Value:
+
+    STATUS_SUCCESS if successful.
+
+    Any other status value returned by MmPapAllocatePagesInRange.
+
+--*/
+
+{
+    (VOID) Unknown;
+
+    if (!(AllocationAttributes & 0x210000)) {
+        return MmPapAllocatePagesInRange(Address, Pages, MemoryType, AllocationAttributes, Range);
+    }
+
+    //
+    // TODO: Finish implementing this routine.
+    //
+
+    DebugError(L"Virtual page allocation not implemented\r\n");
+    return STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS
 BlpMmInitialize (
     IN PMEMORY_INFO             MemoryInfo,
     IN ULONG                    TranslationType,
@@ -109,29 +162,36 @@ Return Value:
 
     MmDescriptorCallTreeCount = 1;
 
+    //
+    // Validate address translation type.
+    //
     if (TranslationType >= TRANSLATION_TYPE_MAX || LibraryParameters->TranslationType >= TRANSLATION_TYPE_MAX) {
         DebugError(L"Invalid translation type\r\n");
         Status = STATUS_INVALID_PARAMETER;
         goto Exit;
     }
+    MmTranslationType = LibraryParameters->TranslationType;
 
     //
-    // Use the statically-allocated descriptors to bootstrap.
+    // Start off using statically-allocated memory descriptors.
     //
-    MmTranslationType = LibraryParameters->TranslationType;
     MmGlobalMemoryDescriptors = MmStaticMemoryDescriptors;
     MmGlobalMemoryDescriptorCount = MAX_STATIC_DESCRIPTOR_COUNT;
 
     //
     // Initialize the heap allocator.
     //
-    Status = MmHapInitialize(LibraryParameters->MinimumHeapSize, LibraryParameters->HeapAllocationAttributes);
+    Status = MmHaInitialize(LibraryParameters->MinimumHeapSize, LibraryParameters->HeapAllocationAttributes);
     if (!NT_SUCCESS(Status)) {
         goto Exit;
     }
 
+    //
+    // TODO: Finish implementing this routine.
+    //
+
 Exit:
-    // MmMdFreeGlobalDescriptors();
+    MmMdFreeGlobalDescriptors();
     MmDescriptorCallTreeCount--;
     return Status;
 }

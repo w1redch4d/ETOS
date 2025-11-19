@@ -17,6 +17,8 @@ Abstract:
 #include "efilib.h"
 #include "mm.h"
 
+#define FREE_LIST_SIZE 56
+
 ULONG HapInitializationStatus = 0;
 PLIST_ENTRY MmFreeList;
 ULONG HapMinimumHeapSize;
@@ -130,12 +132,16 @@ Return Value:
 
     STATUS_INTEGER_OVERFLOW if an integer overflow occurs.
 
+    Any other status value returned by BlMmAllocatePagesInRange.
+
 --*/
 
 {
     NTSTATUS Status;
     PMM_HEAP_BOUNDARY HeapBoundary;
-    ULONG_PTR HeapLimit;
+    PVOID HeapBase;
+    PMM_USED_HEAP_ENTRY FirstHeapEntry;
+    PMM_FREE_HEAP_ENTRY SecondHeapEntry;
 
     //
     // Add space for extra data.
@@ -165,8 +171,7 @@ Return Value:
     //
     if (!IsListEmpty(&MmHeapBoundaries)) {
         HeapBoundary = CONTAINING_RECORD(MmHeapBoundaries.Flink, MM_HEAP_BOUNDARY, ListEntry);
-        HeapLimit = HeapBoundary->HeapLimit + PAGE_SIZE;
-        if (HeapLimit <= HeapBoundary->HeapEnd) {
+        if ((HeapBoundary->HeapLimit + PAGE_SIZE) <= HeapBoundary->HeapEnd) {
             DebugError(L"Existing heap expansion not implemented\r\n");
             return STATUS_NOT_IMPLEMENTED;
         }
@@ -175,20 +180,62 @@ Return Value:
     //
     // Allocate a new heap.
     //
-    // Status = BlMmAllocatePagesInRange(
-    //     &HeapBase,
-    //     HeapSize >> PAGE_SHIFT,
-    //     BlLoaderHeap,
-    //     HapAllocationAttributes,
-    //     0,
-    //     0
-    // );
+    HeapBase = NULL;
+    Status = BlMmAllocatePagesInRange(
+        &HeapBase,
+        HeapSize >> PAGE_SHIFT,
+        MEMORY_TYPE_HEAP,
+        HapAllocationAttributes,
+        NULL,
+        0
+    );
+    if (!NT_SUCCESS(Status)) {
+        return Status;
+    }
 
+    //
+    // Define initial heap layout.
+    //
+    FirstHeapEntry = (PMM_USED_HEAP_ENTRY)HeapBase;
+    HeapBoundary = (PMM_HEAP_BOUNDARY)FirstHeapEntry->Buffer;
+    SecondHeapEntry = (PMM_FREE_HEAP_ENTRY)(HeapBoundary + 1);
+
+    //
+    // The first buffer contains the heap boundary structure.
+    //
+    FirstHeapEntry->BufferNext = (ULONG_PTR)SecondHeapEntry & ~(MM_HEAP_PTR_BUFFER_FREE | MM_HEAP_PTR_BUFFER_ON_HEAP | MM_HEAP_PTR_ENTRY_NOT_USED);
+    FirstHeapEntry->BufferPrevious = 0;
+    HeapBoundary->HeapBase = (ULONG_PTR)HeapBase;
+    HeapBoundary->HeapLimit = (ULONG_PTR)HeapBase + HeapSize;
+    HeapBoundary->HeapStart = (ULONG_PTR)SecondHeapEntry;
+
+    //
+    // The second buffer is free.
+    //
+    SecondHeapEntry->BufferNext = (ULONG_PTR)SecondHeapEntry | (MM_HEAP_PTR_BUFFER_FREE | MM_HEAP_PTR_BUFFER_ON_HEAP);
+    SecondHeapEntry->BufferPrevious = (ULONG_PTR)FirstHeapEntry;
+
+    //
+    // Host the free list if needed.
+    //
+    if (IsListEmpty(&MmHeapBoundaries)) {
+        MmFreeList = (PLIST_ENTRY)(HeapBoundary->HeapLimit - FREE_LIST_SIZE);
+        HeapBoundary->HeapLimit = (ULONG_PTR)MmFreeList;
+        RtlZeroMemory(MmFreeList, FREE_LIST_SIZE);
+    }
+
+    //
+    // Reserve the top page.
+    //
+    HeapBoundary->HeapEnd = HeapBoundary->HeapLimit;
+    HeapBoundary->HeapLimit -= PAGE_SIZE;
+
+    InsertTailList(&MmHeapBoundaries, &HeapBoundary->ListEntry);
     return STATUS_SUCCESS;
 }
 
 NTSTATUS
-MmHapInitialize (
+MmHaInitialize (
     IN ULONG MinimumHeapSize,
     IN ULONG AllocationAttributes
     )
@@ -197,7 +244,7 @@ MmHapInitialize (
 
 Routine Description:
 
-    Allocates memory on the heap.
+    Initializes the heap allocator.
 
 Arguments:
 
