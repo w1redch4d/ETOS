@@ -17,13 +17,175 @@ Abstract:
 #include "efilib.h"
 #include "mm.h"
 
-#define FREE_LIST_SIZE 56
+#define MIN_ALLOCATION_SIZE 32
+
+#define FREE_LIST_BUCKET_COUNT 7
+#define FREE_LIST_SIZE (sizeof(PMM_FREE_HEAP_ENTRY) * FREE_LIST_BUCKET_COUNT)
 
 ULONG HapInitializationStatus = 0;
-PLIST_ENTRY MmFreeList;
+PMM_FREE_HEAP_ENTRY *MmFreeList;
 ULONG HapMinimumHeapSize;
 ULONG HapAllocationAttributes;
 LIST_ENTRY MmHeapBoundaries;
+
+FORCEINLINE
+ULONG
+MmHapGetBufferSize (
+    IN PMM_FREE_HEAP_ENTRY HeapEntry
+    )
+
+/*++
+
+Routine Description:
+
+    Calculates the size of a heap entry's buffer.
+
+Arguments:
+
+    HeapEntry - Pointer to the heap entry to check.
+
+Return Value:
+
+    The buffer size.
+
+--*/
+
+{
+    return (HeapEntry->BufferNext & MM_HEAP_PTR_DATA_MASK) - (ULONG_PTR)HeapEntry;
+}
+
+ULONG
+MmHapGetBucketIndex (
+    IN ULONG_PTR BufferSize
+    )
+
+/*++
+
+Routine Description:
+
+    Calculates the bucket index for the specified buffer size.
+
+Arguments:
+
+    BufferSize - The buffer size.
+
+Return Value:
+
+    The bucket index if successful.
+
+    FREE_LIST_BUCKET_COUNT if unsuccessful.
+
+--*/
+
+{
+    ULONG Shift;
+
+    //
+    // Large allocations use the last bucket.
+    //
+    if (BufferSize >= PAGE_SIZE) {
+        return FREE_LIST_BUCKET_COUNT - 1;
+    }
+
+    //
+    // Calculate the bucket index.
+    //
+    Shift = 0;
+    do {
+        Shift++;
+    } while (BufferSize >> Shift);
+
+    return Shift - 6;
+}
+
+PMM_USED_HEAP_ENTRY
+MmHapFindFreeHeapEntry (
+    IN ULONG_PTR BufferSize
+    )
+
+/*++
+
+Routine Description:
+
+    Finds a suitable entry in the freelist.
+
+Arguments:
+
+    BufferSize - The minimum buffer size.
+
+Return Value:
+
+    Pointer to the entry if successful.
+
+    NULL if unsuccessful.
+
+--*/
+
+{
+    ULONG BucketIndex;
+    PMM_FREE_HEAP_ENTRY FreeEntry;
+    ULONG_PTR FreeBufferSize;
+
+    //
+    // Find the bucket index for the buffer size.
+    //
+    BucketIndex = MmHapGetBucketIndex(BufferSize);
+    if (BucketIndex >= FREE_LIST_BUCKET_COUNT) {
+        return NULL;
+    }
+
+    do {
+        FreeEntry = MmFreeList != NULL ? MmFreeList[BucketIndex] : NULL;
+
+        //
+        // Find a large enough free entry in the bucket.
+        //
+        while (FreeEntry) {
+            FreeBufferSize = MmHapGetBufferSize(FreeEntry);
+            if (FreeBufferSize >= BufferSize) {
+                break;
+            }
+
+            FreeEntry = (PMM_FREE_HEAP_ENTRY)(FreeEntry->FreeNext & MM_HEAP_PTR_DATA_MASK);
+        }
+
+        //
+        // Done if an entry was found.
+        //
+        if (FreeEntry != NULL) {
+            break;
+        }
+
+        //
+        // Move on to the next bucket.
+        //
+        BucketIndex++;
+        if (BucketIndex >= FREE_LIST_BUCKET_COUNT) {
+            return NULL;
+        }
+    } while (FreeEntry == NULL);
+
+    //
+    // Remove it from the list.
+    //
+    // FreeEntry = MmHapRemoveBufferFromFreeList(FreeEntry);
+    // if (FreeEntry == NULL) {
+    //     return NULL;
+    // }
+
+    //
+    // Check for corruption.
+    //
+    // FreeEntry = MmHapCheckBufferLinks(FreeEntry);
+    // if (FreeEntry == NULL) {
+    //     return NULL;
+    // }
+
+    //
+    // TODO: Finish implementing this routine.
+    //
+    return NULL;
+}
 
 NTSTATUS
 BlMmFreeHeap (
@@ -90,6 +252,7 @@ Return Value:
 
 {
     NTSTATUS Status;
+    ULONG_PTR RealSize;
     PVOID Buffer;
 
     //
@@ -97,6 +260,21 @@ Return Value:
     //
     if (HapInitializationStatus != 1) {
         return NULL;
+    }
+
+    //
+    // Align to size of used entry.
+    //
+    RealSize = ALIGN_UP(Size + FIELD_OFFSET(MM_USED_HEAP_ENTRY, Buffer), FIELD_OFFSET(MM_USED_HEAP_ENTRY, Buffer));
+    if (RealSize <= Size) {
+        return NULL;
+    }
+
+    //
+    // Must be large enough to hold a free entry.
+    //
+    if (RealSize < sizeof(MM_FREE_HEAP_ENTRY)) {
+        RealSize = sizeof(MM_FREE_HEAP_ENTRY);
     }
 
     //
@@ -124,7 +302,7 @@ Routine Description:
 
 Arguments:
 
-    HeapSize - The requested heap size.
+    HeapSize - The amount to extend the heap by.
 
 Return Value:
 
@@ -203,7 +381,7 @@ Return Value:
     //
     // The first buffer contains the heap boundary structure.
     //
-    FirstHeapEntry->BufferNext = (ULONG_PTR)SecondHeapEntry & ~(MM_HEAP_PTR_BUFFER_FREE | MM_HEAP_PTR_BUFFER_ON_HEAP | MM_HEAP_PTR_ENTRY_NOT_USED);
+    FirstHeapEntry->BufferNext = (ULONG_PTR)SecondHeapEntry & MM_HEAP_PTR_DATA_MASK;
     FirstHeapEntry->BufferPrevious = 0;
     HeapBoundary->HeapBase = (ULONG_PTR)HeapBase;
     HeapBoundary->HeapLimit = (ULONG_PTR)HeapBase + HeapSize;
@@ -219,7 +397,7 @@ Return Value:
     // Host the free list if needed.
     //
     if (IsListEmpty(&MmHeapBoundaries)) {
-        MmFreeList = (PLIST_ENTRY)(HeapBoundary->HeapLimit - FREE_LIST_SIZE);
+        MmFreeList = (PMM_FREE_HEAP_ENTRY *)(HeapBoundary->HeapLimit - FREE_LIST_SIZE);
         HeapBoundary->HeapLimit = (ULONG_PTR)MmFreeList;
         RtlZeroMemory(MmFreeList, FREE_LIST_SIZE);
     }
