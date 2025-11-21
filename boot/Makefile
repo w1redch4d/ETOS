@@ -6,7 +6,7 @@
 APP ?= bootmgr
 BUILDDIR ?= build/$(APP)
 CFLAGS += -Iinc -I../sdk/inc/nt -I../sdk/inc/crt
-CFILES = $(addprefix lib/misc/,event.c option.c string.c) $(addprefix lib/mm/,mm.c mmha.c mmmd.c mmpa.c) lib/bootlib.c
+CFILES = $(addprefix lib/io/,fs/fat.c device.c file.c io.c) $(addprefix lib/misc/,event.c option.c string.c) $(addprefix lib/mm/,mm.c mmha.c mmmd.c mmpa.c) lib/bootlib.c
 ASFILES =
 LIBS = $(BUILDDIR)/../crt/crt.lib $(BUILDDIR)/../rtl/rtl.lib
 

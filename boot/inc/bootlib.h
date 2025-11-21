@@ -406,6 +406,7 @@ typedef BCDE_DATA_TYPE *PBCDE_DATA_TYPE;
 #define BCDE_LIBRARY_TYPE_ALLOWED_IN_MEMORY_SETTINGS   0x17000077
 #define BCDE_LIBRARY_TYPE_INTEGER_000081               0x15000081
 #define BCDE_LIBRARY_TYPE_DEVICE_000083                0x11000083
+#define BCDE_LIBRARY_TYPE_WINDOWS_SYSTEM_DEVICE        0x11000084
 #define BCDE_LIBRARY_TYPE_ENABLE_NUM_LOCK              0x16000087
 
 #define BCDE_BOOTMGR_TYPE_DISPLAY_ORDER                0x24000001
@@ -703,7 +704,7 @@ extern ULONG BlpEnvironmentState;
 extern PBOOT_APPLICATION_PARAMETERS BlpApplicationParameters;
 extern BOOT_LIBRARY_PARAMETERS BlpLibraryParameters;
 extern BOOT_APPLICATION_ENTRY BlpApplicationEntry;
-extern PDEVICE_IDENTIFIER BlpBootDevice;
+extern PDEVICE_IDENTIFIER BlpBootDevice, BlpWindowsSystemDevice;
 extern PWSTR BlpApplicationBaseDirectory;
 extern BOOLEAN BlpApplicationIdentifierSet;
 
@@ -895,6 +896,20 @@ BlEnNotifyEvent (
 
 NTSTATUS
 BlpEnDestroy (
+    VOID
+    );
+
+//
+// I/O management services.
+//
+
+NTSTATUS
+BlpIoInitialize (
+    VOID
+    );
+
+NTSTATUS
+BlpIoDestroy (
     VOID
     );
 

@@ -27,7 +27,7 @@ ULONG BlpApplicationFlags = 0;
 PBOOT_APPLICATION_PARAMETERS BlpApplicationParameters;
 BOOT_LIBRARY_PARAMETERS BlpLibraryParameters;
 BOOT_APPLICATION_ENTRY BlpApplicationEntry;
-PDEVICE_IDENTIFIER BlpBootDevice;
+PDEVICE_IDENTIFIER BlpBootDevice, BlpWindowsSystemDevice;
 PWSTR BlpApplicationBaseDirectory;
 BOOLEAN BlpApplicationIdentifierSet = FALSE;
 ULONG BlpEnvironmentState = 0;
@@ -161,6 +161,14 @@ Return Value:
     }
 
     //
+    // Process the Windows system device option.
+    //
+    Status = BlGetBootOptionDevice(BlpApplicationEntry.Options, BCDE_LIBRARY_TYPE_WINDOWS_SYSTEM_DEVICE, &BlpWindowsSystemDevice, NULL);
+    if (!NT_SUCCESS(Status)) {
+        BlpWindowsSystemDevice = BlpBootDevice;
+    }
+
+    //
     // Initialize the event notification subsystem.
     //
     BlpEnInitialize();
@@ -177,6 +185,14 @@ Return Value:
     // Complete architecture-specific initialization.
     //
     Status = BlpArchInitialize(1);
+    if (!NT_SUCCESS(Status)) {
+        goto Phase2Failed;
+    }
+
+    //
+    // Initialize I/O manager.
+    //
+    Status = BlpIoInitialize();
     if (!NT_SUCCESS(Status)) {
         goto Phase2Failed;
     }
@@ -220,7 +236,7 @@ Return Value:
 
     STATUS_SUCCESS if successful.
 
-    Error code if unsuccessful.
+    The most recent error code if unsuccessful.
 
 --*/
 
@@ -238,6 +254,11 @@ Return Value:
     //
     // TODO: Implement remaining functionality.
     //
+
+    Status = BlpIoDestroy();
+    if (!NT_SUCCESS(Status)) {
+        ReturnStatus = Status;
+    }
 
     if (EnSubsystemInitialized) {
         Status = BlpEnDestroy();
