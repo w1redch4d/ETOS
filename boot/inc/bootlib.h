@@ -44,6 +44,19 @@ Abstract:
 #endif
 
 //
+// Flag helpers.
+//
+
+#define GET_FLAGS(Source, Flags)       ((Source) & (Flags))
+#define SET_FLAGS(Destination, Flags)  ((Destination) |= (Flags))
+#define CHECK_FLAGS_ANY(Source, Flags) (GET_FLAGS(Source, Flags) != 0)
+#define CHECK_FLAGS_ALL(Source, Flags) (GET_FLAGS(Source, Flags) == (Flags))
+
+#define GET_FLAG   GET_FLAGS
+#define SET_FLAG   SET_FLAGS
+#define CHECK_FLAG CHECK_FLAGS_ANY
+
+//
 // Descriptor table context.
 //
 #if defined(__x86_64__) || defined(__i386__)
@@ -222,6 +235,9 @@ typedef struct {
 #define BLOCK_DEVICE_TYPE_REMOVABLE_DISK 1
 #define BLOCK_DEVICE_TYPE_CDROM          2
 #define BLOCK_DEVICE_TYPE_RAM_DISK       3
+#define BLOCK_DEVICE_TYPE_FILE           5
+#define BLOCK_DEVICE_TYPE_VHD_FILE       6
+#define BLOCK_DEVICE_TYPE_MAX            7
 
 typedef struct {
     ULONG Type;
@@ -309,11 +325,15 @@ typedef struct {
 
 #define DEVICE_TYPE_BLOCK         0
 #define DEVICE_TYPE_PARTITION     2
+#define DEVICE_TYPE_SERIAL        3
 #define DEVICE_TYPE_NETWORK       4
+#define DEVICE_TYPE_BOOT_DEVICE   5
 #define DEVICE_TYPE_PARTITION_EX  6
 #define DEVICE_TYPE_VMBUS_CHANNEL 7
+#define DEVICE_TYPE_LOCATE        8
 #define DEVICE_TYPE_URI           9
 
+#define DEVICE_ATTRIBUTE_NOT_READY           0x00000001
 #define DEVICE_ATTRIBUTE_NO_PARENT_SIGNATURE 0x00000004
 
 typedef struct {
@@ -323,6 +343,7 @@ typedef struct {
     ULONG Reserved;
 
     union {
+        UCHAR                     Data;
         BLOCK_DEVICE_IDENTIFIER   BlockDevice;
         PARTITION_IDENTIFIER      Partition;
         NETWORK_DEVICE_IDENTIFIER NetworkDevice;
@@ -655,6 +676,12 @@ NTSTATUS
     IN ULONG EntryIndex
     );
 
+typedef
+NTSTATUS
+(*PTABLE_SET_CALLBACK) (
+    IN PVOID Entry
+    );
+
 //
 // Execution context.
 //
@@ -764,6 +791,15 @@ BlTblMap (
     IN PVOID               *Table,
     IN ULONG               EntryCount,
     IN PTABLE_MAP_CALLBACK Callback
+    );
+
+NTSTATUS
+BlTblSetEntry (
+    IN  PVOID               **Table,
+    IN  PULONG              EntryCount,
+    IN  PVOID               Entry,
+    OUT PULONG              EntryIndex,
+    IN  PTABLE_SET_CALLBACK Callback
     );
 
 //
@@ -955,6 +991,29 @@ BlpIoInitialize (
 NTSTATUS
 BlpIoDestroy (
     VOID
+    );
+
+//
+// I/O device services.
+//
+
+BOOLEAN
+BlpDeviceCompare (
+    IN PDEVICE_IDENTIFIER IdentifierA,
+    IN PDEVICE_IDENTIFIER IdentifierB
+    );
+
+#define DEVICE_REQUEST_FLAG_READABLE 0x00000001
+#define DEVICE_REQUEST_FLAG_WRITABLE 0x00000002
+#define DEVICE_REQUEST_FLAG_8        0x00000008
+#define DEVICE_REQUEST_FLAG_20       0x00000020
+
+NTSTATUS
+BlpDeviceOpen (
+    IN  PDEVICE_IDENTIFIER DeviceIdentifier,
+    IN  ULONG              Flags,
+    IN  ULONG              Unknown,
+    OUT PULONG             DeviceId
     );
 
 //
