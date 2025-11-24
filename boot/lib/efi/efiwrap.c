@@ -338,6 +338,43 @@ Return Value:
 }
 
 NTSTATUS
+EfiVmCloseProtocol (
+    IN EFI_HANDLE Handle,
+    IN EFI_GUID   *Protocol
+    )
+
+/*++
+
+Routine Description:
+
+    Wrapper around CloseProtocol, with address translation support.
+
+Arguments:
+
+    Handle - The handle for the protocol interface.
+
+    Protocol - The unique identifier of the protocol.
+
+Return Value:
+
+    STATUS_SUCCESS if successful.
+
+    STATUS_INVALID_PARAMETER if any argument(s) is/are NULL.
+
+--*/
+
+{
+    (VOID) Handle;
+    (VOID) Protocol;
+
+    //
+    // TODO: Implement this routine.
+    //
+
+    return STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS
 EfiOpenProtocol (
     IN  EFI_HANDLE Handle,
     IN  EFI_GUID   *Protocol,
@@ -410,6 +447,67 @@ Return Value:
     }
 
     return Status;
+}
+
+NTSTATUS
+EfiCloseProtocol (
+    IN EFI_HANDLE Handle,
+    IN EFI_GUID   *Protocol
+    )
+
+/*++
+
+Routine Description:
+
+    Wrapper around CloseProtocol.
+
+Arguments:
+
+    Handle - The handle for the protocol interface.
+
+    Protocol - The unique identifier of the protocol.
+
+Return Value:
+
+    STATUS_SUCCESS if successful.
+
+    STATUS_INVALID_PARAMETER if any argument(s) is/are NULL.
+
+--*/
+
+{
+    EXECUTION_CONTEXT_TYPE ContextType;
+    EFI_STATUS EfiStatus;
+
+    if (MmTranslationType != TRANSLATION_TYPE_NONE) {
+        return EfiVmCloseProtocol(Handle, Protocol);
+    }
+
+    if (EfiST->Hdr.Revision == EFI_1_02_SYSTEM_TABLE_REVISION) {
+        return STATUS_SUCCESS;
+    }
+
+    ContextType = CurrentExecutionContext->Type;
+    if (ContextType != ExecutionContextFirmware) {
+        BlpArchSwitchContext(ExecutionContextFirmware);
+    }
+
+    EfiStatus = EfiBS->CloseProtocol(
+        Handle,
+        Protocol,
+        EfiImageHandle,
+        NULL
+    );
+
+    if (ContextType != ExecutionContextFirmware) {
+        BlpArchSwitchContext(ContextType);
+    }
+
+    if (EfiStatus == EFI_NOT_FOUND) {
+        return STATUS_SUCCESS;
+    }
+
+    return EfiGetNtStatusCode(EfiStatus);
 }
 
 NTSTATUS

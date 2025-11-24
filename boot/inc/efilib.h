@@ -30,6 +30,11 @@ extern EFI_SIMPLE_TEXT_INPUT_PROTOCOL *EfiConIn;
 extern EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *EfiConOut;
 extern EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL *EfiConInEx;
 
+extern const EFI_GUID EfiLoadedImageProtocol;
+extern const EFI_GUID EfiDevicePathProtocol;
+extern const EFI_GUID EfiPxeBaseCodeProtocol;
+extern const EFI_GUID EfiVmbusChannelDevicePath;
+
 //
 // Debugging services.
 //
@@ -117,10 +122,22 @@ EfiVmOpenProtocol (
     );
 
 NTSTATUS
+EfiVmCloseProtocol (
+    IN EFI_HANDLE Handle,
+    IN EFI_GUID   *Protocol
+    );
+
+NTSTATUS
 EfiOpenProtocol (
     IN  EFI_HANDLE Handle,
     IN  EFI_GUID   *Protocol,
     OUT VOID       **Interface OPTIONAL
+    );
+
+NTSTATUS
+EfiCloseProtocol (
+    IN EFI_HANDLE Handle,
+    IN EFI_GUID   *Protocol
     );
 
 NTSTATUS
