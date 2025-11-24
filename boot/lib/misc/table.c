@@ -149,3 +149,106 @@ Return Value:
 
     return ReturnStatus;
 }
+
+NTSTATUS
+BlTblSetEntry (
+    IN  PVOID               **Table,
+    IN  PULONG              EntryCount,
+    IN  PVOID               Entry,
+    OUT PULONG              EntryIndex,
+    IN  PTABLE_SET_CALLBACK Callback
+    )
+
+/*++
+
+Routine Description:
+
+    Sets an entry in a table using a callback function.
+
+Arguments:
+
+    Table - Pointer to a pointer to the first entry in the table.
+
+    EntryCount - Pointer to the number of entries in the table.
+
+    Entry - Pointer to the entry value to be set.
+
+    EntryIndex - Pointer to a ULONG that receives the entry's index in the table.
+
+    Callback - Pointer to a callback that attempts to free a used table entry.
+
+Return Value:
+
+    STATUS_SUCCESS if successful.
+
+    STATUS_NO_MEMORY if memory allocation fails.
+
+--*/
+
+{
+    NTSTATUS Status;
+    ULONG Index;
+    PVOID *OldTable, *NewTable;
+    ULONG OldEntryCount, NewEntryCount;
+
+    //
+    // Validate parameters.
+    //
+    if (!ARGUMENT_PRESENT(Table)
+        || *Table == NULL
+        || !ARGUMENT_PRESENT(EntryCount)
+        || !ARGUMENT_PRESENT(Callback)) {
+        return STATUS_INVALID_PARAMETER;
+    }
+
+    //
+    // Initialize state.
+    //
+    OldTable = *Table;
+    OldEntryCount = *EntryCount;
+
+    //
+    // Try to set empty entry.
+    //
+    Index = 0;
+    while (Index < OldEntryCount) {
+        if (OldTable[Index] == NULL) {
+            goto SetEntry;
+        }
+
+        Index++;
+    }
+
+    //
+    // Try to replace used entry.
+    //
+    Index = 0;
+    while (Index < OldEntryCount) {
+        Status = Callback(OldTable[Index]);
+        if (NT_SUCCESS(Status)) {
+            goto SetEntry;
+        }
+
+        Index++;
+    }
+
+    //
+    // Reallocate and expand table.
+    //
+    NewEntryCount = OldEntryCount * 2;
+    NewTable = BlMmAllocateHeap(sizeof(*NewTable) * NewEntryCount);
+    if (NewTable == NULL) {
+        return STATUS_NO_MEMORY;
+    }
+    RtlZeroMemory(&NewTable[OldEntryCount], sizeof(*NewTable) * OldEntryCount);
+    RtlMoveMemory(NewTable, OldTable, sizeof(*NewTable) * OldEntryCount);
+    BlMmFreeHeap(OldTable);
+    *Table = NewTable;
+    *EntryCount = NewEntryCount;
+
+SetEntry:
+    (*Table)[Index] = Entry;
+    *EntryIndex = Index;
+
+    return STATUS_SUCCESS;
+}
