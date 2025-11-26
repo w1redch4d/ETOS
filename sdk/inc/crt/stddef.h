@@ -23,7 +23,7 @@ Abstract:
     (defined(__STDC_WANT_LIB_EXT1__) && __STDC_WANT_LIB_EXT1__ > 0)
 
 //
-// Process definition requests.
+// Enable default definitions if none were requested.
 //
 #if !defined(__need_ptrdiff_t)   && !defined(__need_size_t)      && \
     !defined(__need_rsize_t)     && !defined(__need_wchar_t)     && \
@@ -133,6 +133,9 @@ Abstract:
 #ifdef __need_wint_t
     #ifndef _WINT_T
         #define _WINT_T
+        #ifndef __WINT_TYPE__
+            #define __WINT_TYPE__ unsigned int
+        #endif
         typedef __WINT_TYPE__ wint_t;
     #endif
     #undef __need_wint_t
