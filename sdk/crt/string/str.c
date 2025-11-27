@@ -10,7 +10,7 @@ Module Name:
 
 Abstract:
 
-    String manipulation routines.
+    String services.
 
 --*/
 
@@ -35,7 +35,7 @@ strlen (
 size_t
 strnlen (
     const char *s,
-    size_t maxlen
+    size_t     maxlen
     )
 
 {
@@ -65,27 +65,26 @@ strcmp (
         s2++;
     }
 
-    return *(unsigned char *)s1 - *(unsigned char*)s2;
+    return *(unsigned char *)s1 - *(unsigned char *)s2;
 }
 
 int
 strncmp (
     const char *s1,
     const char *s2,
-    size_t n
+    size_t     n
     )
 
 {
-    while (n > 0) {
+    while (n--) {
         if (*s1 != *s2) {
-            return *(unsigned char *)s1 - *(unsigned char*)s2;
+            return *(unsigned char *)s1 - *(unsigned char *)s2;
         }
 
         if (*s1 == '\0') {
             return 0;
         }
 
-        n--;
         s1++;
         s2++;
     }
@@ -96,7 +95,7 @@ strncmp (
 char *
 strchr (
     const char *s,
-    int c
+    int        c
     )
 
 {
@@ -112,21 +111,41 @@ strchr (
 }
 
 char *
+strrchr (
+    const char *s,
+    int        c
+    )
+
+{
+    const char *last;
+
+    last = NULL;
+    do {
+        if (*s == (char)c) {
+            last = s;
+        }
+    } while (*s++ != '\0');
+
+    return (char *)last;
+}
+
+char *
 strstr (
     const char *haystack,
     const char *needle
     )
 
 {
-    const char *ptr = haystack;
+    const char *pos;
 
     if (*needle == '\0') {
         return (char *)haystack;
     }
 
-    while ((ptr = strchr(ptr, *needle)) != NULL) {
-        if (strcmp(ptr, needle) == 0) {
-            return (char *)ptr;
+    pos = haystack;
+    while ((pos = strchr(pos, *needle)) != NULL) {
+        if (strcmp(pos, needle) == 0) {
+            return (char *)pos;
         }
     }
 

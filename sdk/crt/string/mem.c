@@ -10,7 +10,7 @@ Module Name:
 
 Abstract:
 
-    Memory manipulation routines.
+    Memory services.
 
 --*/
 
@@ -18,14 +18,15 @@ Abstract:
 
 void *
 memset (
-    void *s,
-    int c,
+    void   *s,
+    int    c,
     size_t n
     )
 
 {
-    void *ptr = s;
+    void *ptr;
 
+    ptr = s;
     while (n--) {
         *(char *)s = (char)c;
         s = (char *)s + 1;
@@ -36,14 +37,15 @@ memset (
 
 void *
 memcpy (
-    void *dest,
+    void       *dest,
     const void *src,
-    size_t n
+    size_t     n
     )
 
 {
-    void *ptr = dest;
+    void *ptr;
 
+    ptr = dest;
     while (n--) {
         *(char *)dest = *(char *)src;
         dest = (char *)dest + 1;
@@ -55,27 +57,33 @@ memcpy (
 
 void *
 memmove (
-    void *dest,
+    void       *dest,
     const void *src,
-    size_t n
+    size_t     n
     )
 
 {
-    void *ptr = dest;
+    void *ptr;
+
+    ptr = dest;
 
     /* Check for overlap */
-    if (src > dest || ((char *)src + n) < (char *)dest) {
+    if (src >= dest || ((char *)src + n) <= (char *)dest) {
         /* Low-to-high copy */
-        return memcpy(dest, src, n);
-    }
-
-    /* High-to-low copy */
-    dest = (char *)dest + n;
-    src = (char *)src + n;
-    while (n--) {
-        dest = (char *)dest - 1;
-        src = (char *)src - 1;
-        *(char *)dest = *(char *)src;
+        while (n--) {
+            *(char *)dest = *(char *)src;
+            dest = (char *)dest + 1;
+            src = (char *)src + 1;
+        }
+    } else {
+        /* High-to-low copy */
+        dest = (char *)dest + n;
+        src = (char *)src + n;
+        while (n--) {
+            dest = (char *)dest - 1;
+            src = (char *)src - 1;
+            *(char *)dest = *(char *)src;
+        }
     }
 
     return ptr;
@@ -85,18 +93,17 @@ int
 memcmp (
     const void *s1,
     const void *s2,
-    size_t n
+    size_t     n
     )
 
 {
-    while (n > 0) {
+    while (n--) {
         if (*(char *)s1 != *(char *)s2) {
-            return *(unsigned char *)s1 - *(unsigned char*)s2;
+            return *(unsigned char *)s1 - *(unsigned char *)s2;
         }
 
-        n--;
-        s1++;
-        s2++;
+        s1 = (char *)s1 + 1;
+        s2 = (char *)s2 + 1;
     }
 
     return 0;
