@@ -20,7 +20,7 @@ Abstract:
     defined(__need_nullptr_t)   || defined(__need_max_align_t) || \
     defined(__need_wint_t)      || defined(__need_NULL)        || \
     defined(__need_unreachable) || defined(__need_offsetof)    || \
-    (defined(__STDC_WANT_LIB_EXT1__) && __STDC_WANT_LIB_EXT1__ > 0)
+    (defined(__STDC_WANT_LIB_EXT1__) && __STDC_WANT_LIB_EXT1__ >= 1)
 
 //
 // Enable default definitions if none were requested.
@@ -38,7 +38,7 @@ Abstract:
     #define __need_NULL
     #define __need_offsetof
 
-    #if defined(__STDC_WANT_LIB_EXT1__) && __STDC_WANT_LIB_EXT1__ > 0
+    #if defined(__STDC_WANT_LIB_EXT1__) && __STDC_WANT_LIB_EXT1__ >= 1
         #define __need_rsize_t
     #endif
 

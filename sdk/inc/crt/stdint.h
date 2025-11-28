@@ -214,6 +214,9 @@ typedef uint64_t uintmax_t;
 #define PTRDIFF_MAX INTPTR_MAX
 
 #define SIZE_MAX UINTPTR_MAX
+#if defined(__STDC_WANT_LIB_EXT1__) && __STDC_WANT_LIB_EXT1__ >= 1
+    #define RSIZE_MAX SIZE_MAX
+#endif
 
 #define SIG_ATOMIC_MIN INT32_MIN
 #define SIG_ATOMIC_MAX INT32_MAX
