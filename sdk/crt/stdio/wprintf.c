@@ -10,33 +10,37 @@ Module Name:
 
 Abstract:
 
-    Wide formatted string printing routines.
+    Wide-character formatted printing services.
 
 --*/
 
+#define __STDC_WANT_LIB_EXT1__ 1
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <wchar.h>
 
 static
 size_t
 print_hex (
-    wchar_t *dest,
-    size_t maxlen,
-    unsigned int num
+    wchar_t  *dest,
+    size_t   destsz,
+    uint32_t num
     )
 
 {
     size_t n;
-    int shift;
-    unsigned int digit;
+    int8_t shift;
+    uint8_t digit;
 
     n = 0;
     shift = 28;
-    while (n < maxlen && shift >= 0) {
+    while (n < destsz && shift >= 0) {
         digit = (num >> shift) & 0xf;
         if (digit >= 0xa) {
-            *dest = 'a' + (digit - 0xa);
+            *dest = L'a' + (digit - 0xa);
         } else {
-            *dest = '0' + digit;
+            *dest = L'0' + digit;
         }
 
         dest++;
@@ -50,28 +54,30 @@ print_hex (
 static
 size_t
 print_dec (
-    wchar_t *dest,
-    size_t maxlen,
-    unsigned int num
+    wchar_t  *dest,
+    size_t   destsz,
+    uint32_t num
     )
 
 {
     size_t n;
-    unsigned int div, pad, digit;
+    bool pad;
+    uint32_t div;
+    uint8_t digit;
 
     n = 0;
+    pad = true;
     div = 1000000000;
-    pad = 1;
-    while (n < maxlen && div > 0) {
+    while (n < destsz && div > 0) {
         digit = num / div;
         num %= div;
 
         if (digit != 0) {
-            pad = 0;
+            pad = false;
         }
 
         if (!pad || div == 1) {
-            *dest++ = '0' + digit;
+            *dest++ = L'0' + digit;
             n++;
         }
 
@@ -84,43 +90,51 @@ print_dec (
 static
 size_t
 print_str (
-    wchar_t *dest,
-    size_t maxlen,
-    wchar_t *str
+    wchar_t       *dest,
+    size_t        destsz,
+    const wchar_t *str
     )
 
 {
     size_t len;
 
-    len = wcsnlen(str, maxlen);
-    wmemcpy(dest, str, len);
+    len = wcsnlen_s(str, destsz);
+    if (len == 0 || len == destsz) {
+        return 0;
+    }
 
+    wmemcpy(dest, str, len);
     return len;
 }
 
 int
 vswprintf_s (
-    wchar_t *wcs,
-    size_t maxlen,
+    wchar_t       *buf,
+    size_t        bufsz,
     const wchar_t *format,
-    va_list args
+    va_list       args
     )
 
 {
     wchar_t *dest;
     size_t total, len;
 
-    /* Validate arguments */
-    if (wcs == NULL || maxlen == 0 || format == NULL) {
+    //
+    // TODO: Report security failures.
+    //
+
+    if (buf == NULL || bufsz == 0 || format == NULL) {
         return -1;
     }
 
-    /* Reserve space for terminator */
-    maxlen--;
+    //
+    // Reserve space for terminator.
+    //
+    bufsz--;
 
-    dest = wcs;
+    dest = buf;
     total = 0;
-    while (total < maxlen && *format != '\0') {
+    while (total < bufsz && *format != L'\0') {
         if (*format != L'%') {
             *dest++ = *format++;
             total++;
@@ -129,27 +143,27 @@ vswprintf_s (
 
         format++;
         switch (*format) {
-        case 'x':
-            len = print_hex(dest, maxlen - total, va_arg(args, unsigned int));
+        case L'x':
+            len = print_hex(dest, bufsz - total, va_arg(args, unsigned int));
             dest += len;
             total += len;
             format++;
             break;
-        case 'd':
-            len = print_dec(dest, maxlen - total, va_arg(args, unsigned int));
+        case L'd':
+            len = print_dec(dest, bufsz - total, va_arg(args, unsigned int));
             dest += len;
             total += len;
             format++;
             break;
-        case 's':
-            len = print_str(dest, maxlen - total, va_arg(args, wchar_t *));
+        case L's':
+            len = print_str(dest, bufsz - total, va_arg(args, const wchar_t *));
             dest += len;
             total += len;
             format++;
             break;
         case L'\0':
             break;
-        case '%':
+        case L'%':
         default:
             *dest++ = *format++;
             total++;
@@ -157,6 +171,6 @@ vswprintf_s (
         }
     }
 
-    wcs[total] = L'\0';
+    buf[total] = L'\0';
     return (int)total;
 }

@@ -10,10 +10,13 @@ Module Name:
 
 Abstract:
 
-    Wide-character string manipulation routines.
+    Wide-character string services.
 
 --*/
 
+#define __STDC_WANT_LIB_EXT1__ 1
+#include <errno.h>
+#include <stdint.h>
 #include <wchar.h>
 
 size_t
@@ -35,7 +38,7 @@ wcslen (
 size_t
 wcsnlen (
     const wchar_t *s,
-    size_t maxlen
+    size_t        maxlen
     )
 
 {
@@ -72,11 +75,11 @@ int
 wcsncmp (
     const wchar_t *s1,
     const wchar_t *s2,
-    size_t n
+    size_t        n
     )
 
 {
-    while (n > 0) {
+    while (n--) {
         if (*s1 != *s2) {
             return *s1 - *s2;
         }
@@ -85,7 +88,6 @@ wcsncmp (
             return 0;
         }
 
-        n--;
         s1++;
         s2++;
     }
@@ -96,7 +98,7 @@ wcsncmp (
 wchar_t *
 wcschr (
     const wchar_t *wcs,
-    wchar_t wc
+    wchar_t       wc
     )
 
 {
@@ -112,61 +114,156 @@ wcschr (
 }
 
 wchar_t *
+wcsrchr (
+    const wchar_t *wcs,
+    wchar_t       wc
+    )
+
+{
+    const wchar_t *last;
+
+    last = NULL;
+    do {
+        if (*wcs == wc) {
+            last = wcs;
+        }
+    } while (*wcs++ != L'\0');
+
+    return (wchar_t *)last;
+}
+
+wchar_t *
 wcsstr (
     const wchar_t *haystack,
     const wchar_t *needle
     )
 
 {
-    const wchar_t *ptr = haystack;
+    const wchar_t *pos;
 
     if (*needle == L'\0') {
         return (wchar_t *)haystack;
     }
 
-    while ((ptr = wcschr(ptr, *needle)) != NULL) {
-        if (wcscmp(ptr, needle) == 0) {
-            return (wchar_t *)ptr;
+    pos = haystack;
+    while ((pos = wcschr(pos, *needle)) != NULL) {
+        if (wcscmp(pos, needle) == 0) {
+            return (wchar_t *)pos;
         }
     }
 
     return NULL;
 }
 
-wchar_t *
-wcscpy_s (
-    wchar_t *dest,
-    size_t maxlen,
-    const wchar_t *src
+size_t
+wcsnlen_s (
+    const wchar_t *str,
+    size_t        strsz
     )
 
 {
-    for (size_t i = 0; i < maxlen; i++, src++) {
-        dest[i] = *src;
+    const wchar_t *ptr;
+    size_t maxlen;
 
-        if (*src == L'\0') {
-            break;
-        }
+    if (str == NULL) {
+        return 0;
     }
 
-    return dest;
+    ptr = str;
+    maxlen = strsz;
+    while (strsz--) {
+        if (*ptr == '\0') {
+            return ptr - str;
+        }
+
+        ptr++;
+    }
+
+    return maxlen;
 }
 
-wchar_t *
-wcscat_s (
-    wchar_t *dest,
-    size_t maxlen,
+errno_t
+wcscpy_s (
+    wchar_t       *dest,
+    rsize_t       destsz,
     const wchar_t *src
     )
 
 {
-    for (size_t i = wcsnlen(dest, maxlen); i < maxlen; i++, src++) {
-        dest[i] = *src;
+    size_t srcsz;
 
-        if (*src == L'\0') {
-            break;
-        }
+    //
+    // TODO: Report security failures.
+    //
+
+    if (dest == NULL) {
+        return EINVAL;
     }
 
-    return dest;
+    if (destsz == 0 || destsz > (RSIZE_MAX / sizeof(wchar_t))) {
+        return ERANGE;
+    }
+
+    if (src == NULL) {
+        dest[0] = L'\0';
+        return EINVAL;
+    }
+
+    srcsz = wcsnlen_s(src, destsz) + 1;
+    if (destsz < srcsz) {
+        dest[0] = L'\0';
+        return ERANGE;
+    }
+
+    while (srcsz--) {
+        *dest++ = *src++;
+    }
+
+    return 0;
+}
+
+errno_t
+wcscat_s (
+    wchar_t       *dest,
+    rsize_t       destsz,
+    const wchar_t *src
+    )
+
+{
+    size_t destlen, srcsz;
+
+    //
+    // TODO: Report security failures.
+    //
+
+    if (dest == NULL) {
+        return EINVAL;
+    }
+
+    if (destsz == 0 || destsz > (RSIZE_MAX / sizeof(wchar_t))) {
+        return ERANGE;
+    }
+
+    destlen = wcsnlen_s(dest, destsz);
+    if (destlen == destsz) {
+        return EINVAL;
+    }
+
+    if (src == NULL) {
+        dest[0] = L'\0';
+        return EINVAL;
+    }
+
+    srcsz = wcsnlen_s(src, destsz) + 1;
+    if (destsz < (destlen + srcsz)) {
+        dest[0] = L'\0';
+        return ERANGE;
+    }
+
+    dest += destlen;
+    while (srcsz--) {
+        *dest++ = *src++;
+    }
+
+    return 0;
 }
