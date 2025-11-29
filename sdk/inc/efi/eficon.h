@@ -10,11 +10,13 @@ Module Name:
 
 Abstract:
 
-    Provides EFI console protocol definitions.
+    EFI console protocol definitions.
 
 --*/
 
+#if !defined(_MSC_VER) || _MSC_VER > 1000
 #pragma once
+#endif
 
 #ifndef _EFICON_H
 #define _EFICON_H
@@ -172,7 +174,7 @@ struct _EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL {
 #define EFI_BACKGROUND_LIGHTGRAY 0x70
 
 //
-// Required Arrow Shapes.
+// Required arrow shapes.
 //
 #define ARROW_LEFT                         0x2190
 #define ARROW_UP                           0x2191
@@ -180,7 +182,7 @@ struct _EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL {
 #define ARROW_DOWN                         0x2193
 
 //
-// Unicode Box Draw characters.
+// Unicode box draw characters.
 //
 
 #define BOXDRAW_HORIZONTAL                 0x2500
@@ -233,13 +235,13 @@ struct _EFI_SIMPLE_TEXT_INPUT_EX_PROTOCOL {
 #define BOXDRAW_DOUBLE_VERTICAL_HORIZONTAL 0x256c
 
 //
-// Required Block Elements.
+// Required block elements.
 //
 #define BLOCKELEMENT_FULL_BLOCK            0x2588
 #define BLOCKELEMENT_LIGHT_SHADE           0x2591
 
 //
-// Required Geometric Shapes.
+// Required geometric shapes.
 //
 #define GEOMETRICSHAPE_UP_TRIANGLE         0x25b2
 #define GEOMETRICSHAPE_RIGHT_TRIANGLE      0x25ba
@@ -345,4 +347,4 @@ struct _EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL {
     SIMPLE_TEXT_OUTPUT_MODE      *Mode;
 };
 
-#endif /* !_EFICON_H */
+#endif // _EFICON_H

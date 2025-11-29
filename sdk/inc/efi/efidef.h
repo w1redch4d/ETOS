@@ -10,54 +10,62 @@ Module Name:
 
 Abstract:
 
-    Provides basic EFI definitions.
+    Basic EFI definitions.
 
 --*/
 
+#if !defined(_MSC_VER) || _MSC_VER > 1000
 #pragma once
+#endif
 
 #ifndef _EFIDEF_H
 #define _EFIDEF_H
 
 //
-// Parameter decorators.
+// Parameter decorators to indicate usage.
+// IN - Argument passed into function.
+// OUT - Argument returned from function through pointer.
+// OPTIONAL - Argumnent optional.
 //
-#define IN
-#define OUT
-#define OPTIONAL
+#ifndef IN
+    #define IN
+    #define OUT
+    #define OPTIONAL
+#endif
 
 //
-// Keyword aliases.
+// Constant value.
 //
-#define CONST const
-#define VOID  void
+#ifndef CONST
+    #define CONST const
+#endif
 
 //
-// NULL pointer constant.
+// Void value.
 //
-#if (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L) || (defined(__cplusplus) && __cplusplus >= 201103L)
-    #define NULL nullptr
-#elif defined(__cplusplus)
-    #define NULL 0
-#else
+#ifndef VOID
+    #define VOID void
+#endif
+
+//
+// NULL pointer.
+//
+#ifndef NULL
     #define NULL ((VOID *) 0)
 #endif
 
 //
 // Boolean values.
 //
-#if (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L) || defined(__cplusplus)
-    #define TRUE  true
-    #define FALSE false
-#else
+#ifndef TRUE
     #define TRUE  ((BOOLEAN) 1)
     #define FALSE ((BOOLEAN) 0)
 #endif
 
 //
-// Forces the compiler to inline the routine.
+// Forced inlining specifier.
 //
-#if defined(_MSC_EXTENSIONS)
+#ifdef _MSC_EXTENSIONS
     #if _MSC_VER >= 1200
         #define FORCEINLINE __forceinline
     #else
@@ -70,32 +78,14 @@ Abstract:
 #endif
 
 //
-// Static assertion helper.
-//
-#if (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L) || (defined(__cplusplus) && __cplusplus >= 202203L)
-    #define STATIC_ASSERT static_assert
-#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
-    #define STATIC_ASSERT _Static_assert
-#else
-    #warning Static assertion not available; compilation problems may not be detected
-    #define STATIC_ASSERT(Expr, Msg)
-#endif
-
-//
 // Boolean type.
 //
-#if (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L) || defined(__cplusplus)
-    typedef bool  BOOLEAN;
-#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
-    typedef _Bool BOOLEAN;
-#else
-    typedef UINT8 BOOLEAN;
-#endif
+typedef UINT8 BOOLEAN;
 
 //
 // Character types.
 //
-typedef char   CHAR8;
+typedef UINT8  CHAR8;
 typedef UINT16 CHAR16;
 
 //
@@ -125,7 +115,7 @@ typedef struct {
 // Hour:       0 - 23.
 // Minute:     0 - 59.
 // Second:     0 - 59.
-// Nanosecond: 0 - 999999999.
+// Nanosecond: 0 - 999,999,999.
 // Timezone:   -1440 - 1440, or 2047.
 //
 typedef struct {
@@ -287,27 +277,28 @@ typedef enum {
 
 typedef struct {
     //
-    // Memory type (EFI_MEMORY_TYPE) of the region.
+    // Region memory type (EFI_MEMORY_TYPE).
     //
     UINT32               Type;
 
     UINT32               Pad;
 
     //
-    // Must be aligned on an EFI_PAGE_SIZE-byte boundary.
+    // Region starting address.
+    // Must be a multiple of EFI_PAGE_SIZE.
     // Must not be above 0xfffffffffffff000.
     //
     EFI_PHYSICAL_ADDRESS PhysicalStart;
     EFI_VIRTUAL_ADDRESS  VirtualStart;
 
     //
-    // Number of EFI_PAGE_SIZE-byte pages.
+    // Region size (in EFI_PAGE_SIZE-byte pages).
     // Must not be zero.
     //
     UINT64               NumberOfPages;
 
     //
-    // Capabilities of the memory region.
+    // Region capabilities.
     //
     UINT64               Attribute;
 } EFI_MEMORY_DESCRIPTOR;
@@ -328,35 +319,22 @@ typedef CHAR8 ISO_639_2;
 #define EFI_PAGES_TO_SIZE(Pages) ((Pages) << EFI_PAGE_SHIFT)
 
 //
-// Maximum values for fixed-width integer types.
+// Fixed-width integer type limits.
 //
-#define MAX_INT8   ((INT8)   0x7f)
-#define MAX_UINT8  ((UINT8)  0xff)
-#define MAX_INT16  ((INT16)  0x7fff)
-#define MAX_UINT16 ((UINT16) 0xffff)
-#define MAX_INT32  ((INT32)  0x7fffffff)
-#define MAX_UINT32 ((UINT32) 0xffffffff)
-#define MAX_INT64  ((INT64)  0x7fffffffffffffffULL)
-#define MAX_UINT64 ((UINT64) 0xffffffffffffffffULL)
 
-//
-// Minimum values for signed fixed-width integer types.
-//
 #define MIN_INT8   (((INT8)  -127) - 1)
 #define MIN_INT16  (((INT16) -32767) - 1)
 #define MIN_INT32  (((INT32) -2147483647) - 1)
 #define MIN_INT64  (((INT64) -9223372036854775807LL) - 1)
 
-//
-// Check fixed-width integer type sizes.
-//
-STATIC_ASSERT(sizeof(UINT8)  == 1, "UINT8 must be 1 byte in size");
-STATIC_ASSERT(sizeof(UINT16) == 2, "UINT16 must be 2 bytes in size");
-STATIC_ASSERT(sizeof(UINT32) == 4, "UINT32 must be 4 bytes in size");
-STATIC_ASSERT(sizeof(UINT64) == 8, "UINT64 must be 8 bytes in size");
-STATIC_ASSERT(sizeof(INT8)   == 1, "INT8 must be 1 byte in size");
-STATIC_ASSERT(sizeof(INT16)  == 2, "INT16 must be 2 bytes in size");
-STATIC_ASSERT(sizeof(INT32)  == 4, "INT32 must be 4 bytes in size");
-STATIC_ASSERT(sizeof(INT64)  == 8, "INT64 must be 8 bytes in size");
+#define MAX_INT8   ((INT8)   0x7f)
+#define MAX_INT16  ((INT16)  0x7fff)
+#define MAX_INT32  ((INT32)  0x7fffffff)
+#define MAX_INT64  ((INT64)  0x7fffffffffffffffULL)
 
-#endif /* !_EFIDEF_H */
+#define MAX_UINT8  ((UINT8)  0xff)
+#define MAX_UINT16 ((UINT16) 0xffff)
+#define MAX_UINT32 ((UINT32) 0xffffffffU)
+#define MAX_UINT64 ((UINT64) 0xffffffffffffffffULL)
+
+#endif // _EFIDEF_H

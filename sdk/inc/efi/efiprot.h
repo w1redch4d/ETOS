@@ -10,14 +10,20 @@ Module Name:
 
 Abstract:
 
-    Provides EFI protocol definitions.
+    EFI protocol definitions.
 
 --*/
 
+#if !defined(_MSC_VER) || _MSC_VER > 1000
 #pragma once
+#endif
 
 #ifndef _EFIPROT_H
 #define _EFIPROT_H
+
+//
+// Loaded image protocol.
+//
 
 #define EFI_LOADED_IMAGE_PROTOCOL_GUID { 0x5b1b31a1, 0x9562, 0x11d2, { 0x8e, 0x3f, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b } }
 #define LOADED_IMAGE_PROTOCOL EFI_LOADED_IMAGE_PROTOCOL_GUID
@@ -50,6 +56,10 @@ typedef struct {
 
     EFI_IMAGE_UNLOAD         Unload;
 } EFI_LOADED_IMAGE, EFI_LOADED_IMAGE_PROTOCOL;
+
+//
+// PXE base code protocol.
+//
 
 #define EFI_PXE_BASE_CODE_PROTOCOL_GUID { 0x03c4e603, 0xac28, 0x11d3, { 0x9a, 0x2d, 0x00, 0x90, 0x27, 0x3f, 0xc1, 0x4d } }
 
@@ -214,4 +224,4 @@ typedef struct {
     EFI_PXE_BASE_CODE_MODE *Mode;
 } EFI_PXE_BASE_CODE, EFI_PXE_BASE_CODE_PROTOCOL;
 
-#endif /* !_EFIPROT_H */
+#endif // _EFIPROT_H

@@ -10,11 +10,13 @@ Module Name:
 
 Abstract:
 
-    Provides processor/compiler-specific EFI definitions for i386 systems.
+    i386-specific EFI definitions.
 
 --*/
 
+#if !defined(_MSC_VER) || _MSC_VER > 1000
 #pragma once
+#endif
 
 #ifndef _EFIBIND_H
 #define _EFIBIND_H
@@ -22,15 +24,15 @@ Abstract:
 //
 // EFI requires structure alignment.
 //
-#if !defined(__GNUC__)
+#ifndef __GNUC__
     #pragma pack()
 #endif
 
 //
-// Compiler-specific calling convention.
+// EFI service calling convention.
 //
 #ifndef EFIAPI
-    #if defined(_MSC_EXTENSIONS)
+    #ifdef _MSC_EXTENSIONS
         #define EFIAPI __cdecl
     #elif defined(__clang__) || defined(__GNUC__)
         #define EFIAPI __attribute__((cdecl))
@@ -42,36 +44,44 @@ Abstract:
 //
 // Fixed-width integer types.
 //
-#if defined(_MSC_EXTENSIONS)
-    typedef unsigned __int8    UINT8;
-    typedef unsigned __int16   UINT16;
-    typedef unsigned __int32   UINT32;
-    typedef unsigned __int64   UINT64;
+#ifdef _MSC_EXTENSIONS
     typedef __int8             INT8;
     typedef __int16            INT16;
     typedef __int32            INT32;
     typedef __int64            INT64;
+
+    typedef unsigned __int8    UINT8;
+    typedef unsigned __int16   UINT16;
+    typedef unsigned __int32   UINT32;
+    typedef unsigned __int64   UINT64;
 #else
-    typedef unsigned char      UINT8;
-    typedef unsigned short     UINT16;
-    typedef unsigned int       UINT32;
-    typedef unsigned long long UINT64;
     typedef signed char        INT8;
-    typedef short              INT16;
-    typedef int                INT32;
-    typedef long long          INT64;
+    typedef signed short int   INT16;
+    typedef signed int         INT32;
+
+    typedef unsigned char      UINT8;
+    typedef unsigned short int UINT16;
+    typedef unsigned int       UINT32;
+
+    __extension__ typedef signed long long int   INT64;
+    __extension__ typedef unsigned long long int UINT64;
 #endif
 
 //
 // Native-width integer types.
 //
-typedef UINT32 UINTN;
+
 typedef INT32  INTN;
+typedef UINT32 UINTN;
+
+#define MIN_INTN  (((INTN) -2147483647) - 1)
+#define MAX_INTN  ((INTN)  0x7fffffff)
+#define MAX_UINTN ((UINTN) 0xffffffffU)
 
 //
-// Error masks.
+// EFI_STATUS error masks.
 //
 #define EFI_ERROR_MASK     0x80000000
 #define EFI_ERROR_MASK_OEM 0xc0000000
 
-#endif /* !_EFIBIND_H */
+#endif // _EFIBIND_H

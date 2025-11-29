@@ -10,11 +10,13 @@ Module Name:
 
 Abstract:
 
-    Provides EFI error code definitions.
+    EFI error code definitions.
 
 --*/
 
+#if !defined(_MSC_VER) || _MSC_VER > 1000
 #pragma once
+#endif
 
 #ifndef _EFIERR_H
 #define _EFIERR_H
@@ -93,4 +95,4 @@ Abstract:
 #define EFI_PROTOCOL_UNREACHABLE  EFIERR(102)
 #define EFI_PORT_UNREACHABLE      EROERR(103)
 
-#endif /* !_EFIERR_H */
+#endif // _EFIERR_H
