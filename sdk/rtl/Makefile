@@ -1,5 +1,5 @@
 # RTL (Run-Time Library) build configuration.
-# Copyright (c) 2025, Quinn Stephens.
+# Copyright (c) 2025, Quinn Stephens, w1redch4d
 # All rights reserved.
 # Provided under the BSD 3-Clause license.
 
