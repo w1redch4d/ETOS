@@ -19,6 +19,7 @@ Abstract:
 
 EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *ConOut;
 
+#ifndef NDEBUG
 VOID
 EfiDebugPrintf (
     IN PWSTR Format,
@@ -131,3 +132,5 @@ Return Value:
     ConOut = Interface;
     EfiDebugPrintf(L"[ETOS] EFI early debug logging enabled\r\n");
 }
+
+#endif

@@ -48,8 +48,9 @@ Return Value:
 
 {
     if (Phase == 1) {
+#if !defined(NDEBUG)
         DebugInfo(L"Destroying memory manager (phase 1/1)...\r\n");
-
+#endif
         //
         // TODO: Implement remaining functionality.
         //
@@ -60,8 +61,9 @@ Return Value:
     }
 
     if (Phase == 0) {
+#if !defined(NDEBUG)
         DebugInfo(L"Destroying memory manager (phase 0/1)...\r\n");
-
+#endif
         //
         // TODO: Implement remaining functionality.
         //
@@ -107,15 +109,18 @@ Return Value:
 
     (VOID) MemoryInfo;
 
+#if !defined(NDEBUG)
     DebugInfo(L"Initializing memory manager...\r\n");
-
+#endif
     MmDescriptorCallTreeCount = 1;
 
     //
     // Validate address translation type.
     //
     if (TranslationType >= TRANSLATION_TYPE_MAX || LibraryParameters->TranslationType >= TRANSLATION_TYPE_MAX) {
+#if !defined(NDEBUG)
         DebugError(L"Invalid translation type\r\n");
+#endif
         Status = STATUS_INVALID_PARAMETER;
         goto Exit;
     }

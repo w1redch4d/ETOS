@@ -176,8 +176,9 @@ Return Value:
         return STATUS_SUCCESS;
     }
 
+#if !defined(NDEBUG)
     DebugInfo(L"Initializing firmware services (phase 1/1)...\r\n");
-
+#endif
     //
     // Check if num lock should be enabled.
     //
@@ -208,7 +209,9 @@ Return Value:
         //
         Status = EfiOpenProtocol(EfiST->ConsoleInHandle, (EFI_GUID *)&EfiSimpleTextInputExProtocol, (VOID **)&EfiConInEx);
         if (!NT_SUCCESS(Status)) {
+#if !defined(NDEBUG)
             DebugError(L"Failed to open extended simple text input protocol (Status=0x%x)\r\n", Status);
+#endif
             return Status;
         }
     } else if (EnableNumLock) {

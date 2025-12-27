@@ -43,8 +43,9 @@ Return Value:
 --*/
 
 {
+#if !defined(NDEBUG)
     DebugInfo(L"Destroying event notification subsystem...\r\n");
-
+#endif
     //
     // TODO: Finish implementing this routine.
     //
@@ -162,8 +163,9 @@ Return Value:
 --*/
 
 {
+#if !defined(NDEBUG)
     DebugInfo(L"Initializing event notification subsystem...\r\n");
-
+#endif
     InitializeListHead(&EnEventNotificationList);
     EnSubsystemInitialized = TRUE;
 }

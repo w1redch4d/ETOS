@@ -46,22 +46,25 @@ Return Value:
 
 {
     PBOOT_APPLICATION_PARAMETERS InputParameters;
+    unsigned int status = 0;
 
+#if !defined(NDEBUG)
     //
     // Initialize early debugging services.
     //
     EfiDebugInitialize(SystemTable->ConOut);
-
+#endif
     //
     // Create firmware-independent parameters structure.
     //
     InputParameters = EfiInitCreateInputParameters(ImageHandle, SystemTable);
-    if (InputParameters == NULL) {
-        return EFI_INVALID_PARAMETER;
-    }
+    if (InputParameters)
+        status = BmMain(InputParameters);
+    else 
+        status = STATUS_INVALID_PARAMETER;
 
     //
     // Transfer control to firmware-independent code.
     //
-    return EfiGetEfiStatusCode(BmMain(InputParameters));
+    return EfiGetEfiStatusCode(status);
 }

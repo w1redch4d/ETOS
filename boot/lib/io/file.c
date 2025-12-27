@@ -56,8 +56,9 @@ Return Value:
     NTSTATUS Status, ReturnStatus;
     PFS_REGISTRY_ENTRY RegistryEntry, NextRegistryEntry;
 
+#if !defined(NDEBUG)
     DebugInfo(L"Destroying file manager...\r\n");
-
+#endif
     //
     // TODO: Finish implementing this routine.
     //
@@ -124,8 +125,9 @@ Return Value:
     PFS_REGISTER_FUNCTION_TABLE RegisterFunctionTable;
     PFS_REGISTRY_ENTRY RegistryEntry;
 
+#if !defined(NDEBUG)
     DebugInfo(L"Initializing file manager...\r\n");
-
+#endif
     //
     // Initialize file table.
     //

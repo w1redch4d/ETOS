@@ -45,8 +45,9 @@ Return Value:
 --*/
 
 {
+#if !defined(NDEBUG)
     DebugInfo(L"Destroying device manager...\r\n");
-
+#endif
     //
     // TODO: Finish implementing this routine.
     //
@@ -85,8 +86,9 @@ Return Value:
 {
     ULONG DeviceTableSize;
 
+#if !defined(NDEBUG)
     DebugInfo(L"Initializing device manager...\r\n");
-
+#endif
     //
     // Initialize device table entry count and device list.
     //

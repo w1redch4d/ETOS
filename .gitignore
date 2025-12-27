@@ -7,6 +7,7 @@
 !.gitattributes
 !.gitignore
 /build
+/build_rel
 /disk
 /unused
 
@@ -62,6 +63,7 @@
 modules.order
 Module.symvers
 Mkfile.old
+compile_commands.json
 dkms.conf
 
 # debug information files

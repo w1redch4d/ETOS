@@ -38,8 +38,9 @@ Return Value:
 --*/
 
 {
+#if !defined(NDEBUG)
     DebugInfo(L"Destroying FAT filesystem driver...\r\n");
-
+#endif
     //
     // TODO: Implement this routine.
     //
@@ -69,8 +70,9 @@ Return Value:
 --*/
 
 {
+#if !defined(NDEBUG)
     DebugInfo(L"Initializing FAT filesystem driver...\r\n");
-
+#endif
     //
     // TODO: Implement this routine.
     //

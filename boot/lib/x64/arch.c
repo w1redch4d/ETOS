@@ -870,9 +870,9 @@ Return Value:
 
         return STATUS_SUCCESS;
     }
-
+#if !defined(NDEBUG)
     DebugInfo(L"Initializing architecture services (phase 1/1)...\r\n");
-
+#endif
     //
     // Install trap vectors to handle breakpoints and exceptions.
     //

@@ -147,11 +147,12 @@ Return Value:
         goto Phase0Failed;
     }
 
+#if !defined(NDEBUG)
     //
     // Debug routines are available from this point onwards.
     //
     DebugInfo(L"Debug logging enabled\r\n");
-
+#endif
     //
     // Initialize the memory manager.
     //
@@ -202,7 +203,9 @@ Return Value:
     //
 
     if (NT_SUCCESS(Status)) {
+#if !defined(NDEBUG)
         DebugInfo(L"Boot library initialization completed successfully\r\n");
+#endif
         return STATUS_SUCCESS;
     }
 
@@ -243,7 +246,9 @@ Return Value:
 {
     NTSTATUS Status, ReturnStatus;
 
+#if !defined(NDEBUG)
     DebugInfo(L"Destroying boot library...\r\n");
+#endif
 
     ReturnStatus = STATUS_SUCCESS;
 

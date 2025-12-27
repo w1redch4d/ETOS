@@ -324,7 +324,9 @@ Return Value:
 --*/
 
 {
+#if !defined(NDEBUG)
     DebugInfo(L"Destroying heap allocator...\r\n");
+#endif
     HapInitializationStatus = 0;
 }
 
@@ -481,8 +483,9 @@ Return Value:
 {
     NTSTATUS Status;
 
+#if !defined(NDEBUG)
     DebugInfo(L"Initializing heap allocator...\r\n");
-
+#endif
     //
     // Initialize heap state.
     //

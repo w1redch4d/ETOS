@@ -15,6 +15,7 @@ Abstract:
 --*/
 
 #include "bootmgr.h"
+#include "bootlib.h"
 
 GUID GUID_WINDOWS_BOOTMGR = { 0x9dea862c, 0x5cdd, 0x4e70, { 0xac, 0xc1, 0xf3, 0x2b, 0x34, 0x4d, 0x47, 0x95 } };
 GUID GUID_WINDOWS_LEGACY_NTLDR = { 0x466f5a88, 0x0af2, 0x4f76, { 0x90, 0x38, 0x09, 0x5b, 0x17, 0x0d, 0xc2, 0x1c } };
@@ -78,7 +79,7 @@ Return Value:
     Status = BlInitializeLibrary(ApplicationParameters, &LibraryParameters);
     if (!NT_SUCCESS(Status)) {
         if (Status != STATUS_INVALID_PARAMETER_9) {
-            ConsolePrint(L"BlInitializeLibrary failed 0x%x\r\n", Status);
+            EfiPrintf(L"BlInitializeLibrary failed 0x%x\r\n", Status);
         }
 
         goto Exit;
@@ -95,14 +96,18 @@ Return Value:
     DataStoreHandle = NULL;
     Status = BmOpenDataStore(&DataStoreHandle);
     if (!NT_SUCCESS(Status)) {
+#if !defined(NDEBUG)
         DebugError(L"Failed to open BCD\r\n");
+#endif
         goto Exit;
     }
 
     //
     // Nothing else to do right now.
     //
+#if !defined(NDEBUG)
     DebugInfo(L"Halting...\r\n");
+#endif
     while (TRUE) {
 #if defined(__x86_64__) || defined(__i386__)
         asm volatile("cli; hlt");

@@ -47,8 +47,9 @@ Return Value:
 {
     NTSTATUS Status, ReturnStatus;
 
+#if !defined(NDEBUG)
     DebugInfo(L"Destroying I/O manager...\r\n");
-
+#endif
     ReturnStatus = STATUS_SUCCESS;
 
     //
@@ -111,8 +112,9 @@ Return Value:
     NTSTATUS Status;
     ULONG DestroyRoutineTableSize;
 
+#if !defined(NDEBUG)
     DebugInfo(L"Initializing I/O manager...\r\n");
-
+#endif
     //
     // Initialize destroy routine table.
     //
