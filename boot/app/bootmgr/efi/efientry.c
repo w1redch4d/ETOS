@@ -16,6 +16,7 @@ Abstract:
 
 #include "efilib.h"
 #include "bootmgr.h"
+#include "ntdef.h"
 
 EFI_STATUS
 EFIAPI
@@ -46,7 +47,7 @@ Return Value:
 
 {
     PBOOT_APPLICATION_PARAMETERS InputParameters;
-    unsigned int status = 0;
+    NTSTATUS status = 0;
 
 #if !defined(NDEBUG)
     //
