@@ -15,6 +15,8 @@ Abstract:
 --*/
 
 #include "bootlib.h"
+#include "ntdef.h"
+#include "ntstatus.h"
 #include <wchar.h>
 
 PBOOT_OPTION_CALLBACKS BlpBootOptionCallbacks = NULL;
@@ -76,6 +78,8 @@ Return Value:
 
     return NULL;
 }
+
+
 
 ULONG
 BlGetBootOptionSize (
@@ -565,6 +569,86 @@ Return Value:
 }
 
 NTSTATUS
+BlGetBootOptionInteger (
+    IN  PBOOT_ENTRY_OPTION Options,
+    IN  BCDE_DATA_TYPE     Type,
+    OUT INT64*           ValueOut
+    )
+
+/*++
+
+Routine Description:
+
+    Retrieves a boot option of type Type as a INTEGER.
+
+Arguments:
+
+    Options - Pointer to the boot option list.
+
+    Type - The type of option to search for.
+
+    Value - Receives the option's value.
+
+Return Value:
+
+    STATUS_SUCCESS if successful.
+
+    STATUS_INVALID_PARAMETER if Type is not of format BCDE_FORMAT_INTEGER.
+
+    STATUS_NOT_FOUND if no matching option could be found.
+
+    Any other status value returned by the BCD filter callback.
+
+--*/
+
+{
+    NTSTATUS Status;
+    PBOOT_ENTRY_OPTION BootOption;
+    INT64 Value;
+
+    //
+    // Validate the requested option type.
+    //
+    if ((Type & BCDE_FORMAT_MASK) == BCDE_FORMAT_INTEGER) {
+        return STATUS_INVALID_PARAMETER;
+    }
+
+    //
+    // Find an option of the requested type.
+    //
+    BootOption = BcdUtilGetBootOption(Options, Type);
+    if (BootOption) {
+        Value = *(INT64*)((ULONG_PTR)BootOption->Type + BootOption->DataOffset);
+        Status = STATUS_SUCCESS;
+    } else {
+        Status = STATUS_NOT_FOUND;
+    }
+
+    //
+    // Pass through BCD filter callback if registered.
+    //
+    if (BlpBootOptionCallbacks != NULL && BlpBootOptionCallbacks->Integer != NULL) {
+        Status = BlpBootOptionCallbacks->Integer(
+            BlpBootOptionCallbackCookie,
+            Status,
+            0,
+            BlGetApplicationIdentifier(),
+            Type,
+            &Value
+        );
+    }
+
+    //
+    // Return result.
+    //
+    if (NT_SUCCESS(Status)) {
+        *ValueOut = Value;
+    }
+
+    return Status;
+}
+
+NTSTATUS
 BlGetBootOptionBoolean (
     IN  PBOOT_ENTRY_OPTION Options,
     IN  BCDE_DATA_TYPE     Type,
@@ -799,5 +883,40 @@ Return Value:
     //
     Status = BlAppendBootOptions(BootEntry, Option);
     BlMmFreeHeap(Option);
+    return Status;
+}
+
+
+NTSTATUS
+BlReplaceBootOptions (
+    IN PBOOT_APPLICATION_ENTRY BootEntry,
+    IN PBOOT_ENTRY_OPTION Options) {
+
+    NTSTATUS Status;
+    ULONG Attributes;
+    size_t BootOptionListSize;
+    PBOOT_ENTRY_OPTION NewOptions; 
+
+    Status = 0;
+    if ( !Options )
+        return STATUS_INVALID_PARAMETER;
+    Attributes = BootEntry->Attributes;
+    if ( (BootEntry->Attributes & 2) != 0 )
+    {
+        BlMmFreeHeap(BootEntry->Options);
+        Attributes = BootEntry->Attributes;
+    }
+    BootEntry->Options = 0;
+    BootEntry->Attributes = Attributes & 0xFFFFFF7D;
+    BootOptionListSize = (unsigned int)BlGetBootOptionListSize(Options);
+    NewOptions = (PBOOT_ENTRY_OPTION)BlMmAllocateHeap(BootOptionListSize);
+    if ( !NewOptions )
+        return STATUS_NO_MEMORY;
+    memmove(NewOptions, Options, BootOptionListSize);
+    BootEntry->Attributes |= 2u;
+    BootEntry->Options = NewOptions;
+
+
+
     return Status;
 }

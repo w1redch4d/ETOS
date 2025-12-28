@@ -13,6 +13,7 @@ set(BOOT_SOURCES
     lib/misc/event.c
     lib/misc/option.c
     lib/misc/string.c
+    lib/misc/resource.c
 
     lib/mm/mm.c
     lib/mm/mmha.c

@@ -19,6 +19,70 @@ Abstract:
 #include "efilib.h"
 #endif
 
+
+NTSTATUS
+BlpMmInitializeConstraints (
+    VOID
+    )
+
+/*++
+
+Routine Description:
+
+    This routine reads physical memory constraint requirements from the
+    application options and saves them for subsequent use by the page allocator.
+
+Arguments:
+
+    None
+
+Return Value:
+
+    NT Status code.
+
+--*/
+
+{
+
+    NTSTATUS Status  = STATUS_SUCCESS;
+
+    // TODO IMPLEMENT
+   
+
+    return Status;
+}
+
+
+VOID
+BlMmRemoveBadMemory (
+    VOID
+    )
+
+/*++
+
+Routine Description:
+
+    This routine reads bad memory information from BCD, then attempts to
+    remove any such regions from system memory so they will not be
+    available to boot applications, or the OS.
+
+Arguments:
+
+    None.
+
+Return Value:
+
+    None.
+
+--*/
+
+{
+
+    // TODO IMPLEMENT
+
+    return;
+}
+
 NTSTATUS
 MmPapAllocatePagesInRange (
     IN OUT PVOID          *Address,

@@ -102,6 +102,8 @@ Return Value:
         goto Exit;
     }
 
+    BlReplaceBootOptions(&BlpApplicationEntry,  Option);
+
     //
     // Nothing else to do right now.
     //

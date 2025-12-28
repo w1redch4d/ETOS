@@ -25,4 +25,15 @@ Abstract:
 #include <ntstatus.h>
 #include <ntimage.h>
 
+
+typedef struct _IMAGE_RESOURCE_DIRECTORY {
+    ULONG   Characteristics;
+    ULONG   TimeDateStamp;
+    USHORT  MajorVersion;
+    USHORT  MinorVersion;
+    USHORT  NumberOfNamedEntries;
+    USHORT  NumberOfIdEntries;
+//  IMAGE_RESOURCE_DIRECTORY_ENTRY DirectoryEntries[];
+} IMAGE_RESOURCE_DIRECTORY, *PIMAGE_RESOURCE_DIRECTORY;
+
 #endif /* !_NT_H */

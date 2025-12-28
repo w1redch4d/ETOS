@@ -15,6 +15,7 @@ Abstract:
 --*/
 
 #include "bootlib.h"
+#include "ntdef.h"
 
 #define MIN_APPLICATION_PARAMETERS_SIZE \
     (sizeof(BOOT_APPLICATION_PARAMETERS) + \
@@ -25,6 +26,7 @@ Abstract:
 
 ULONG BlpApplicationFlags = 0;
 PBOOT_APPLICATION_PARAMETERS BlpApplicationParameters;
+PBOOT_ENTRY_OPTION Option;
 BOOT_LIBRARY_PARAMETERS BlpLibraryParameters;
 BOOT_APPLICATION_ENTRY BlpApplicationEntry;
 PDEVICE_IDENTIFIER BlpBootDevice, BlpWindowsSystemDevice;
@@ -32,6 +34,7 @@ PWSTR BlpApplicationBaseDirectory;
 BOOLEAN BlpApplicationIdentifierSet = FALSE;
 ULONG BlpEnvironmentState = 0;
 ULONG BlPlatformFlags = 0x2a0000 | PLATFORM_FLAG_FIRMWARE_EXECUTION_CONTEXT_SUPPORTED;
+INT64 BlLogControl = 0;
 
 NTSTATUS
 InitializeLibrary (
@@ -181,6 +184,8 @@ Return Value:
     if (!NT_SUCCESS(Status)) {
         goto Phase2Failed;
     }
+
+    Option = &BootEntry->InlineOptions;
 
     //
     // Complete architecture-specific initialization.
@@ -339,14 +344,26 @@ Return Value:
 --*/
 
 {
-    if (!(LibraryParameters->Flags & BOOT_LIBRARY_FLAG_REINITIALIZE)) {
+    INT64 Value;
+    PFIRMWARE_DATA FirmwareData;
+    if ((LibraryParameters->Flags & BOOT_LIBRARY_FLAG_REINITIALIZE) == 0)
         return InitializeLibrary(ApplicationParameters, LibraryParameters);
+
+    BlpLibraryParameters = *LibraryParameters;
+    FirmwareData = (PFIRMWARE_DATA)((ULONG_PTR)ApplicationParameters + ApplicationParameters->FirmwareDataOffset);
+    if ((LibraryParameters->Flags & BOOT_LIBRARY_FLAG_REINITIALIZE_ALL) != 0) {
+        if (BlGetBootOptionInteger(Option, BCDE_LIBRARY_TYPE_INTEGER_000081, &Value) >= 0)
+             BlLogControl |= Value;
+        BlpFwInitialize(1, FirmwareData);
+        // BlpSiInitialize(1);
+        // BlBdInitialize();
+        BlMmRemoveBadMemory();
+        BlpMmInitializeConstraints();
+        // BlpDisplayInitialize(Flags);
+        BlpResourceInitialize();
     }
 
-    RtlCopyMemory(&BlpLibraryParameters, LibraryParameters, sizeof(BlpLibraryParameters));
-    if (!(LibraryParameters->Flags & BOOT_LIBRARY_FLAG_REINITIALIZE_ALL)) {
-        return STATUS_SUCCESS;
-    }
+
 
     //
     // TODO: Implement remaining functionality.

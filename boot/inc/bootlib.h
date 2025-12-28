@@ -639,6 +639,16 @@ NTSTATUS
 
 typedef
 NTSTATUS
+(*PBOOT_OPTION_CALLBACK_INTEGER) (
+    IN  ULONGLONG      Cookie,
+    IN  NTSTATUS       Status,
+    IN  ULONG          Unknown,
+    IN  PGUID          Identifier,
+    IN  BCDE_DATA_TYPE Type,
+    OUT INT64*       Value
+    );
+typedef
+NTSTATUS
 (*PBOOT_OPTION_CALLBACK_BOOLEAN) (
     IN  ULONGLONG      Cookie,
     IN  NTSTATUS       Status,
@@ -650,7 +660,7 @@ NTSTATUS
 
 typedef struct {
     PBOOT_OPTION_CALLBACK_BOOLEAN Boolean;
-    PVOID                         Integer;
+    PBOOT_OPTION_CALLBACK_INTEGER Integer;
     PBOOT_OPTION_CALLBACK_STRING  String;
     PBOOT_OPTION_CALLBACK_DEVICE  Device;
 } BOOT_OPTION_CALLBACKS, *PBOOT_OPTION_CALLBACKS;
@@ -752,11 +762,13 @@ extern ULONG BlpEnvironmentState;
 extern PBOOT_APPLICATION_PARAMETERS BlpApplicationParameters;
 extern BOOT_LIBRARY_PARAMETERS BlpLibraryParameters;
 extern BOOT_APPLICATION_ENTRY BlpApplicationEntry;
+extern PBOOT_ENTRY_OPTION Option;
 extern PDEVICE_IDENTIFIER BlpBootDevice, BlpWindowsSystemDevice;
 extern PWSTR BlpApplicationBaseDirectory;
 extern BOOLEAN BlpApplicationIdentifierSet;
 
 extern BOOLEAN EnSubsystemInitialized;
+extern INT64 BlLogControl;
 
 extern PEXECUTION_CONTEXT CurrentExecutionContext;
 
@@ -846,6 +858,13 @@ BlGetBootOptionString (
     );
 
 NTSTATUS
+BlGetBootOptionInteger (
+    IN  PBOOT_ENTRY_OPTION Options,
+    IN  BCDE_DATA_TYPE     Type,
+    OUT INT64*             Value
+    );
+
+NTSTATUS
 BlGetBootOptionBoolean (
     IN  PBOOT_ENTRY_OPTION Options,
     IN  BCDE_DATA_TYPE     Type,
@@ -865,6 +884,11 @@ BlAppendBootOptionString (
     IN PWSTR                   String
     );
 
+NTSTATUS
+BlReplaceBootOptions (
+    IN PBOOT_APPLICATION_ENTRY BootEntry,
+    IN PBOOT_ENTRY_OPTION Options
+);
 //
 // Firmware services.
 //
@@ -904,6 +928,16 @@ ArchRestoreProcessorFeatures (
 // Memory management services.
 //
 
+NTSTATUS
+BlpMmInitializeConstraints (
+    VOID
+    );
+
+VOID BlMmRemoveBadMemory (
+    VOID
+    );
+
+    
 NTSTATUS
 BlpMmInitialize (
     IN PMEMORY_INFO             MemoryInfo,
@@ -1016,6 +1050,15 @@ BlpDeviceOpen (
     OUT PULONG             DeviceId
     );
 
+
+//
+// Resource Services.
+//
+
+NTSTATUS
+BlpResourceInitialize (
+    VOID
+    );
 //
 // Library services.
 //
